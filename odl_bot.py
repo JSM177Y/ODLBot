@@ -96,10 +96,10 @@ async def standings(ctx):
                 continue
 
             # Adjust the indices here to match the structure of your sheet
-            rank = row[1].strip('#')  # Rank is in the second column (index 1)
-            team_name = row[3]        # Team Name is in the fourth column (index 3)
-            coach_name = row[4]       # Coach Name is in the fifth column (index 4)
-            record = row[5]           # Record is in the sixth column (index 5)
+            rank = row[0].strip('#')  # Rank is in the second column (index 1)
+            team_name = row[2]        # Team Name is in the fourth column (index 3)
+            coach_name = row[3]       # Coach Name is in the fifth column (index 4)
+            record = row[4]           # Record is in the sixth column (index 5)
 
             response += f"{rank}: {team_name} - {coach_name}, {record}\n"
 
