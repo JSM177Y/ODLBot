@@ -78,23 +78,28 @@ async def check_new_video():
 @bot.command(name='standings')
 async def standings(ctx):
     try:
-        # Use row index 3 for the header
-        values = sheet.get_all_values()
-        header = values[2]  # This is the third row, containing the headers
-        data_rows = values[4:]  # Data starts from the fourth row
+        # Get all values as a list of lists
+        all_values = sheet.get_all_values()
+        # Assume the headers are in the third row
+        headers = all_values[2]  # 0-indexed, this is the third row
+        # Assume data starts from the fourth row
+        data_rows = all_values[3:]  # Skip the headers
 
         response = "**Standings**:\n"
-        # Use enumerate to iterate over each row starting from index 1
+        # Enumerate starts counting from 1 for the rankings
         for i, row in enumerate(data_rows, start=1):
-            rank = row[header.index('v')]  # Use the header index to find the correct column
-            team_name = row[header.index('Team Name')]
-            coach_name = row[header.index('Coach Name')]
-            record = row[header.index('Record')]
-            response += f"#{i} {team_name} - {coach_name}, {record}\n"
-
+            if not row[0].startswith('#'):  # Skip rows that don't start with a rank number
+                continue
+            rank = row[0].strip('#')
+            team_name = row[2]
+            coach_name = row[3]
+            record = row[4]
+            response += f"Rank {rank}: {team_name} - {coach_name}, {record}\n"
+        
         await ctx.send(response)
     except Exception as e:
         await ctx.send(f"Error fetching standings: {str(e)}")
+
 
 @bot.command(name='ping')
 async def ping(ctx):
