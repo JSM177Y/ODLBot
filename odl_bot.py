@@ -107,6 +107,32 @@ async def standings(ctx):
     except Exception as e:
         await ctx.send(f"Error fetching standings: {str(e)}")
 
+@bot.command(name='team')
+async def team(ctx, *, name: str):
+    try:
+        # Open the "Draft" worksheet from your Google Sheet
+        draft_sheet = client.open("Oshawott Draft League").worksheet('Draft')
+
+        # Retrieve all values from the "Draft" sheet
+        draft_values = draft_sheet.get_all_values()
+
+        # Find the row with the matching coach name or team name
+        for row in draft_values:
+            # Assuming the coach name is in column 'F' and team name in column 'E'
+            if name.lower() in (row[4].lower(), row[5].lower()):
+                # Found the matching row, now construct the response
+                team_name = row[4]
+                coach_name = row[5]
+                # Join the team members while skipping empty cells
+                team_members = ', '.join(filter(None, row[6:]))  # Adjust the range if team members start/end in different columns
+                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {team_members}"
+                await ctx.send(response)
+                return
+
+        # If we reach here, the name wasn't found
+        await ctx.send("No team or coach found with that name.")
+    except Exception as e:
+        await ctx.send(f"Error retrieving team information: {str(e)}")
 
 @bot.command(name='ping')
 async def ping(ctx):
