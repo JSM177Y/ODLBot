@@ -108,7 +108,7 @@ async def standings(ctx):
         await ctx.send(f"Error fetching standings: {str(e)}")
 
 @bot.command(name='team')
-async def team(ctx, *, name: str):
+async def team(ctx, *, query: str):
     try:
         # Open the "Draft" worksheet from your Google Sheet
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft')
@@ -116,24 +116,23 @@ async def team(ctx, *, name: str):
         # Retrieve all values from the "Draft" sheet
         draft_values = draft_sheet.get_all_values()
 
-        # Find the row with the matching coach name or team name
-        team_info = None
-        for row in draft_values:
-            # Assuming the coach name is in the second column (index 1) and team name in the first column (index 0)
-            if name.lower() == row[1].lower() or name.lower() == row[0].lower():
-                # Found the matching row, now construct the response
-                team_info = row
+        # The query to lowercase for a case-insensitive match
+        query_lower = query.lower()
+
+        # Initialize response
+        response = ""
+
+        # Iterate through the values to find the team or coach name
+        for col in range(len(draft_values[0])):
+            # Check if this column contains the coach name
+            if draft_values[0][col].lower() == query_lower or draft_values[1][col].lower() == query_lower:
+                coach_name = draft_values[0][col]
+                team_name = draft_values[1][col]
+                members = [draft_values[row][col] for row in range(4, len(draft_values)) if draft_values[row][col]]
+                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {', '.join(members)}"
                 break
 
-        if team_info:
-            team_name = team_info[0]
-            coach_name = team_info[1]
-            # Join the team members starting from the 'Hisuian Samurott' column
-            # Adjust the start index as per your sheet's actual structure
-            team_members_start_index = draft_values[0].index('Hisuian Samurott')
-            team_members = team_info[team_members_start_index:]
-            team_members_list = ', '.join(filter(None, team_members))  # Filter out any empty cells
-            response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {team_members_list}"
+        if response:
             await ctx.send(response)
         else:
             await ctx.send("No team or coach found with that name.")
