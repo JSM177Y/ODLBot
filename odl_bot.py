@@ -96,7 +96,7 @@ async def standings(ctx):
                 continue
 
             # Adjust the indices here to match the structure of your sheet
-            rank = row[1].strip('#')  # Rank is in the second column (index 1)
+            rank = row[2].strip('#')  # Rank is in the second column (index 1)
             team_name = row[4]        # Team Name is in the fourth column (index 3)
             coach_name = row[5]       # Coach Name is in the fifth column (index 4)
             record = row[6]           # Record is in the sixth column (index 5)
