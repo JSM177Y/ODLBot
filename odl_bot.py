@@ -117,20 +117,27 @@ async def team(ctx, *, name: str):
         draft_values = draft_sheet.get_all_values()
 
         # Find the row with the matching coach name or team name
+        team_info = None
         for row in draft_values:
-            # Assuming the coach name is in column 'F' and team name in column 'E'
-            if name.lower() in (row[4].lower(), row[5].lower()):
+            # Assuming the coach name is in the second column (index 1) and team name in the first column (index 0)
+            if name.lower() == row[1].lower() or name.lower() == row[0].lower():
                 # Found the matching row, now construct the response
-                team_name = row[4]
-                coach_name = row[5]
-                # Join the team members while skipping empty cells
-                team_members = ', '.join(filter(None, row[6:]))  # Adjust the range if team members start/end in different columns
-                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {team_members}"
-                await ctx.send(response)
-                return
+                team_info = row
+                break
 
-        # If we reach here, the name wasn't found
-        await ctx.send("No team or coach found with that name.")
+        if team_info:
+            team_name = team_info[0]
+            coach_name = team_info[1]
+            # Join the team members starting from the 'Hisuian Samurott' column
+            # Adjust the start index as per your sheet's actual structure
+            team_members_start_index = draft_values[0].index('Hisuian Samurott')
+            team_members = team_info[team_members_start_index:]
+            team_members_list = ', '.join(filter(None, team_members))  # Filter out any empty cells
+            response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {team_members_list}"
+            await ctx.send(response)
+        else:
+            await ctx.send("No team or coach found with that name.")
+
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
 
