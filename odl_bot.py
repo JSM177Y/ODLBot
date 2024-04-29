@@ -83,7 +83,7 @@ async def standings(ctx):
         # Assume the headers are in the third row
         headers = all_values[2]  # 0-indexed, this is the third row
         # Assume data starts from the fourth row
-        data_rows = all_values[3:]  # Skip the headers
+        data_rows = all_values[4:]  # Skip the headers
 
         response = "**Standings**:\n"
         # Enumerate starts counting from 1 for the rankings
