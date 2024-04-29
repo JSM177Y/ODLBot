@@ -80,42 +80,33 @@ async def standings(ctx):
     try:
         # Get all values from the sheet
         all_values = sheet.get_all_values()
-        
-        # Debug: print all_values to see what is being retrieved
-        print(all_values)
 
-        # Headers are assumed to be on the third row
-        headers = all_values[2]
-        # Data is assumed to start on the fourth row
-        data_rows = all_values[3:]
+        # Assume headers are on the third row, if they exist
+        # If there are no headers, you can skip this line
+        # headers = all_values[2]
+
+        # Data is assumed to start on the fourth row (index 3 if header exists)
+        data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
 
         response = "**Standings:**\n"
 
-        # Debug: Check if data_rows is empty
-        if not data_rows:
-            await ctx.send("No data found in the sheet.")
-            return
-
         for row in data_rows:
-            # Debug: print each row to see what is being processed
-            print(row)
-
-            # Make sure we're only adding non-empty rows
-            if any(cell.strip() for cell in row):
-                # Extract data using column headers; adjust the indices as necessary
-                rank = row[0]
-                team_name = row[2]
-                coach_name = row[3]
-                record = row[4]
-                response += f"{rank}: {team_name} - {coach_name}, {record}\n"
-            else:
-                # If the row is empty, skip to the next one
+            # If the row is empty (all cells are empty or whitespace), skip it
+            if all(cell.strip() == '' for cell in row):
                 continue
+
+            # Adjust the indices here to match the structure of your sheet
+            rank = row[1].strip('#')  # Rank is in the second column (index 1)
+            team_name = row[3]        # Team Name is in the fourth column (index 3)
+            coach_name = row[4]       # Coach Name is in the fifth column (index 4)
+            record = row[5]           # Record is in the sixth column (index 5)
+
+            response += f"{rank}: {team_name} - {coach_name}, {record}\n"
 
         await ctx.send(response)
     except Exception as e:
-        print(e)
         await ctx.send(f"Error fetching standings: {str(e)}")
+
 
 @bot.command(name='ping')
 async def ping(ctx):
