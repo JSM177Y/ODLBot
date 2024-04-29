@@ -78,28 +78,44 @@ async def check_new_video():
 @bot.command(name='standings')
 async def standings(ctx):
     try:
-        # Get all values as a list of lists
+        # Get all values from the sheet
         all_values = sheet.get_all_values()
-        # Assume the headers are in the third row
-        headers = all_values[2]  # 0-indexed, this is the third row
-        # Assume data starts from the fourth row
-        data_rows = all_values[4:]  # Skip the headers
-
-        response = "**Standings**:\n"
-        # Enumerate starts counting from 1 for the rankings
-        for i, row in enumerate(data_rows, start=1):
-            if not row[0].startswith('#'):  # Skip rows that don't start with a rank number
-                continue
-            rank = row[0].strip('#')
-            team_name = row[2]
-            coach_name = row[3]
-            record = row[4]
-            response += f"Rank {rank}: {team_name} - {coach_name}, {record}\n"
         
+        # Debug: print all_values to see what is being retrieved
+        print(all_values)
+
+        # Headers are assumed to be on the third row
+        headers = all_values[2]
+        # Data is assumed to start on the fourth row
+        data_rows = all_values[3:]
+
+        response = "**Standings:**\n"
+
+        # Debug: Check if data_rows is empty
+        if not data_rows:
+            await ctx.send("No data found in the sheet.")
+            return
+
+        for row in data_rows:
+            # Debug: print each row to see what is being processed
+            print(row)
+
+            # Make sure we're only adding non-empty rows
+            if any(cell.strip() for cell in row):
+                # Extract data using column headers; adjust the indices as necessary
+                rank = row[0]
+                team_name = row[2]
+                coach_name = row[3]
+                record = row[4]
+                response += f"{rank}: {team_name} - {coach_name}, {record}\n"
+            else:
+                # If the row is empty, skip to the next one
+                continue
+
         await ctx.send(response)
     except Exception as e:
+        print(e)
         await ctx.send(f"Error fetching standings: {str(e)}")
-
 
 @bot.command(name='ping')
 async def ping(ctx):
