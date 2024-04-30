@@ -114,30 +114,36 @@ async def team(ctx, *, query: str):
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
 
         # Retrieve all values from the "Draft But Simple" sheet
-        teams_data = draft_sheet.get_all_records()
-
-        # Debugging: Log the data fetched
-        print("Teams Data Fetched:", teams_data)
+        # Since this retrieves a list of lists, the top row (team names) will be at index 0
+        # The second row (coach names) will be at index 1, and so on.
+        draft_values = draft_sheet.get_all_values()
 
         # Normalize the query for case-insensitive matching
         query_lower = query.lower()
 
+        # Initialize response variable
+        response = ""
+
         # Search for the team or coach matching the query
-        found = False
-        for team in teams_data:
-            # Check both team name and coach name for a match
-            if query_lower in (team['Team Name'].lower(), team['Coach Name'].lower()):
-                found = True
-                pokemon_list = [team[f'Pokemon {i}'] for i in range(1, 13) if f'Pokemon {i}' in team]
-                response = f"**Team Name:** {team['Team Name']}\n**Coach Name:** {team['Coach Name']}\n**Pokémon:**\n - " + "\n - ".join(pokemon_list)
-                await ctx.send(response)
-                break
-        
-        if not found:
+        # The team names are on the first row, so we check the first list (index 0)
+        for col, team_name in enumerate(draft_values[0]):
+            if team_name.lower() == query_lower:
+                coach_name = draft_values[1][col]
+                # Collecting the Pokemon from rows 3-15
+                pokemon_list = [pokemon for pokemon in draft_values[2:15] if pokemon[col]]
+                pokemon_formatted = '\n - '.join(pokemon_list)
+                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
+                break  # Break the loop since we found the team
+
+        # Sending the response or a not found message
+        if response:
+            await ctx.send(response)
+        else:
             await ctx.send("No team or coach found with that name.")
 
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
+
 
 @bot.command(name='ping')
 async def ping(ctx):
