@@ -114,8 +114,6 @@ async def team(ctx, *, query: str):
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
 
         # Retrieve all values from the "Draft But Simple" sheet
-        # Since this retrieves a list of lists, the top row (team names) will be at index 0
-        # The second row (coach names) will be at index 1, and so on.
         draft_values = draft_sheet.get_all_values()
 
         # Normalize the query for case-insensitive matching
@@ -125,17 +123,15 @@ async def team(ctx, *, query: str):
         response = ""
 
         # Search for the team or coach matching the query
-        # The team names are on the first row, so we check the first list (index 0)
-        for col, team_name in enumerate(draft_values[0]):
-            if team_name.lower() == query_lower:
-                coach_name = draft_values[1][col]
-                # Collecting the Pokemon from rows 3-15
-                pokemon_list = [pokemon for pokemon in draft_values[2:15] if pokemon[col]]
+        for index, col in enumerate(draft_values[0]):  # Assuming team names are in the first row
+            if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
+                team_name = col
+                coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
+                pokemon_list = [pokemon[index] for pokemon in draft_values[2:15]]  # Collect Pokémon names from row 3 to row 15
                 pokemon_formatted = '\n - '.join(pokemon_list)
                 response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
-                break  # Break the loop since we found the team
+                break  # Found the team, break the loop
 
-        # Sending the response or a not found message
         if response:
             await ctx.send(response)
         else:
@@ -143,6 +139,7 @@ async def team(ctx, *, query: str):
 
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
+
 
 
 @bot.command(name='ping')
