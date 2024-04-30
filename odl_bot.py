@@ -116,21 +116,25 @@ async def team(ctx, *, query: str):
         # Retrieve all values from the "Draft But Simple" sheet
         teams_data = draft_sheet.get_all_records()
 
+        # Debugging: Log the data fetched
+        print("Teams Data Fetched:", teams_data)
+
         # Normalize the query for case-insensitive matching
         query_lower = query.lower()
 
         # Search for the team or coach matching the query
+        found = False
         for team in teams_data:
-            # Lowercase team name and coach name for case-insensitive comparison
-            if query_lower == team['Team Name'].lower() or query_lower == team['Coach Name'].lower():
-                # Construct the list of Pokémon from the available rows
-                pokemon_list = [team[f'Pokemon {i}'] for i in range(1, 13) if f'Pokemon {i}' in team and team[f'Pokemon {i}']]
+            # Check both team name and coach name for a match
+            if query_lower in (team['Team Name'].lower(), team['Coach Name'].lower()):
+                found = True
+                pokemon_list = [team[f'Pokemon {i}'] for i in range(1, 13) if f'Pokemon {i}' in team]
                 response = f"**Team Name:** {team['Team Name']}\n**Coach Name:** {team['Coach Name']}\n**Pokémon:**\n - " + "\n - ".join(pokemon_list)
                 await ctx.send(response)
-                return
-
-        # If the loop completes without finding a team, send a not found message
-        await ctx.send("No team or coach found with that name.")
+                break
+        
+        if not found:
+            await ctx.send("No team or coach found with that name.")
 
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
