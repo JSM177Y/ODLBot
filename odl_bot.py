@@ -110,32 +110,27 @@ async def standings(ctx):
 @bot.command(name='team')
 async def team(ctx, *, query: str):
     try:
-        # Open the "Draft" worksheet from your Google Sheet
-        draft_sheet = client.open("Oshawott Draft League").worksheet('Draft')
+        # Open the "Draft But Simple" worksheet from your Google Sheet
+        draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
 
-        # Retrieve all values from the "Draft" sheet
-        draft_values = draft_sheet.get_all_values()
+        # Retrieve all values from the "Draft But Simple" sheet
+        teams_data = draft_sheet.get_all_records()
 
-        # The query to lowercase for a case-insensitive match
+        # Normalize the query for case-insensitive matching
         query_lower = query.lower()
 
-        # Initialize response
-        response = ""
+        # Search for the team or coach matching the query
+        for team in teams_data:
+            # Lowercase team name and coach name for case-insensitive comparison
+            if query_lower == team['Team Name'].lower() or query_lower == team['Coach Name'].lower():
+                # Construct the list of Pokémon from the available rows
+                pokemon_list = [team[f'Pokemon {i}'] for i in range(1, 13) if f'Pokemon {i}' in team and team[f'Pokemon {i}']]
+                response = f"**Team Name:** {team['Team Name']}\n**Coach Name:** {team['Coach Name']}\n**Pokémon:**\n - " + "\n - ".join(pokemon_list)
+                await ctx.send(response)
+                return
 
-        # Iterate through the values to find the team or coach name
-        for col in range(len(draft_values[0])):
-            # Check if this column contains the coach name
-            if draft_values[0][col].lower() == query_lower or draft_values[1][col].lower() == query_lower:
-                coach_name = draft_values[0][col]
-                team_name = draft_values[1][col]
-                members = [draft_values[row][col] for row in range(4, len(draft_values)) if draft_values[row][col]]
-                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Team Members:** {', '.join(members)}"
-                break
-
-        if response:
-            await ctx.send(response)
-        else:
-            await ctx.send("No team or coach found with that name.")
+        # If the loop completes without finding a team, send a not found message
+        await ctx.send("No team or coach found with that name.")
 
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
