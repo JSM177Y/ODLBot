@@ -127,7 +127,7 @@ async def team(ctx, *, query: str):
             if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
                 team_name = col
                 coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
-                pokemon_list = [pokemon[index] for pokemon in draft_values[2:15]]  # Collect Pokémon names from row 3 to row 15
+                pokemon_list = [pokemon[index] for pokemon in draft_values[3:15]]  # Collect Pokémon names from row 3 to row 15
                 pokemon_formatted = '\n - '.join(pokemon_list)
                 response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
                 break  # Found the team, break the loop
