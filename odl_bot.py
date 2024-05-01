@@ -114,47 +114,40 @@ async def team(ctx, *, query: str):
     try:
         logging.debug("Opening the worksheet...")
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
-
-        logging.debug("Retrieving values...")
         draft_values = draft_sheet.get_all_values()
-
-        logging.debug("Processing query...")
         query_lower = query.lower()
-
+        
         response = ""
-        for index, col in enumerate(draft_values[0]):  # Assuming team names are in the first row
+        found = False
+        for index, col in enumerate(draft_values[0]):
             if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
                 team_name = col
                 coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
-                
-                # Process each Pokémon and its tera types
                 pokemon_formatted = []
-                for i in range(2, len(draft_values)):  # Start from row 2 where Pokémon names are assumed to start
-                    pokemon_name = draft_values[i][index] if index < len(draft_values[i]) else ""
-                    if pokemon_name:  # Ensure there is a Pokémon name to process
-                        # Concatenate Pokémon name with tera types if they exist
-                        types = draft_values[i][index+1:index+4]  # Assuming types are in the next three cells
-                        types = [t for t in types if t.strip()]  # Remove any empty strings from types
+                
+                for i in range(2, len(draft_values)):
+                    if index < len(draft_values[i]):
+                        pokemon_name = draft_values[i][index]
+                        types = draft_values[i][index+1:index+4]
+                        types = [t.strip() for t in types if t.strip()]
                         if types:
                             pokemon_info = f"{pokemon_name} - {', '.join(types)}"
                         else:
                             pokemon_info = pokemon_name
                         pokemon_formatted.append(pokemon_info)
-
-                pokemon_formatted = '\n - '.join(pokemon_formatted)
-                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
+                
+                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - " + "\n - ".join(pokemon_formatted)
+                found = True
                 break
-
-        if response:
-            logging.debug("Sending response...")
+        
+        if found:
             await ctx.send(response)
         else:
             await ctx.send("No team or coach found with that name.")
-
+        
     except Exception as e:
         logging.error("Error encountered", exc_info=True)
         await ctx.send(f"Error retrieving team information: {str(e)}")
-
 
 @bot.command(name='ping')
 async def ping(ctx):
