@@ -122,13 +122,26 @@ async def team(ctx, *, query: str):
         query_lower = query.lower()
 
         response = ""
-        for index, col in enumerate(draft_values[0]):
-            logging.debug(f"Checking column: {col}...")
+        for index, col in enumerate(draft_values[0]):  # Assuming team names are in the first row
             if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
                 team_name = col
                 coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
-                pokemon_list = [pokemon[index] for pokemon in draft_values[2:15]]
-                pokemon_formatted = '\n - '.join(pokemon_list)
+                
+                # Process each Pokémon and its tera types
+                pokemon_formatted = []
+                for i in range(2, len(draft_values)):  # Start from row 2 where Pokémon names are assumed to start
+                    pokemon_name = draft_values[i][index] if index < len(draft_values[i]) else ""
+                    if pokemon_name:  # Ensure there is a Pokémon name to process
+                        # Concatenate Pokémon name with tera types if they exist
+                        types = draft_values[i][index+1:index+4]  # Assuming types are in the next three cells
+                        types = [t for t in types if t.strip()]  # Remove any empty strings from types
+                        if types:
+                            pokemon_info = f"{pokemon_name} - {', '.join(types)}"
+                        else:
+                            pokemon_info = pokemon_name
+                        pokemon_formatted.append(pokemon_info)
+
+                pokemon_formatted = '\n - '.join(pokemon_formatted)
                 response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
                 break
 
@@ -141,6 +154,7 @@ async def team(ctx, *, query: str):
     except Exception as e:
         logging.error("Error encountered", exc_info=True)
         await ctx.send(f"Error retrieving team information: {str(e)}")
+
 
 @bot.command(name='ping')
 async def ping(ctx):
