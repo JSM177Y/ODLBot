@@ -140,8 +140,6 @@ async def team(ctx, *, query: str):
     except Exception as e:
         await ctx.send(f"Error retrieving team information: {str(e)}")
 
-
-
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')  # Simple command to test if the bot is responsive
