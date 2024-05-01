@@ -114,7 +114,6 @@ async def standings(ctx):
 logging.debug("Setting up commands...")
 @bot.command(name='team')
 async def team(ctx, *, query: str):
-    logging.basicConfig(level=logging.DEBUG)
     try:
         logging.debug("Opening the worksheet...")
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
@@ -157,4 +156,7 @@ async def team(ctx, *, query: str):
 async def ping(ctx):
     await ctx.send('Pong!')  # Simple command to test if the bot is responsive
 
-bot.run(DISCORD_TOKEN)
+
+if __name__ == '__main__':
+    logging.debug("Starting bot...")
+    bot.run(DISCORD_TOKEN)
