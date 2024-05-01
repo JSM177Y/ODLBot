@@ -7,6 +7,9 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import logging
 
+# Set up logging configuration at the very top
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # Load environment variables
 load_dotenv()
 
