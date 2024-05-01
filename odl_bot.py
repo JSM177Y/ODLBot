@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 from dotenv import load_dotenv
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import logging
 
 # Load environment variables
 load_dotenv()
@@ -109,35 +110,36 @@ async def standings(ctx):
 
 @bot.command(name='team')
 async def team(ctx, *, query: str):
+    logging.basicConfig(level=logging.DEBUG)
     try:
-        # Open the "Draft But Simple" worksheet from your Google Sheet
+        logging.debug("Opening the worksheet...")
         draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
 
-        # Retrieve all values from the "Draft But Simple" sheet
+        logging.debug("Retrieving values...")
         draft_values = draft_sheet.get_all_values()
 
-        # Normalize the query for case-insensitive matching
+        logging.debug("Processing query...")
         query_lower = query.lower()
 
-        # Initialize response variable
         response = ""
-
-        # Search for the team or coach matching the query
-        for index, col in enumerate(draft_values[0]):  # Assuming team names are in the first row
+        for index, col in enumerate(draft_values[0]):
+            logging.debug(f"Checking column: {col}...")
             if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
                 team_name = col
                 coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
-                pokemon_list = [pokemon[index] for pokemon in draft_values[2:15]]  # Collect Pokémon names from row 3 to row 15
+                pokemon_list = [pokemon[index] for pokemon in draft_values[2:15]]
                 pokemon_formatted = '\n - '.join(pokemon_list)
                 response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - {pokemon_formatted}"
-                break  # Found the team, break the loop
+                break
 
         if response:
+            logging.debug("Sending response...")
             await ctx.send(response)
         else:
             await ctx.send("No team or coach found with that name.")
 
     except Exception as e:
+        logging.error("Error encountered", exc_info=True)
         await ctx.send(f"Error retrieving team information: {str(e)}")
 
 @bot.command(name='ping')
