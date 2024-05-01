@@ -108,6 +108,7 @@ async def standings(ctx):
     except Exception as e:
         await ctx.send(f"Error fetching standings: {str(e)}")
 
+logging.debug("Setting up commands...")
 @bot.command(name='team')
 async def team(ctx, *, query: str):
     logging.basicConfig(level=logging.DEBUG)
