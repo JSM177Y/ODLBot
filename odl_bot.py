@@ -5,10 +5,6 @@ from googleapiclient.discovery import build
 from dotenv import load_dotenv
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import logging
-
-# Set up logging configuration at the very top
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load environment variables
 load_dotenv()
@@ -53,7 +49,6 @@ async def on_ready():
 @tasks.loop(minutes=10)
 async def check_new_video():
     global last_video_id
-    print("Checking for new videos...")
     request = youtube.search().list(
         part='snippet',
         channelId=YOUTUBE_CHANNEL_ID,
@@ -72,7 +67,6 @@ async def check_new_video():
             video_url = f'https://www.youtube.com/watch?v={video_id}'
             channel = bot.get_channel(DISCORD_CHANNEL_ID)
             if channel:
-                # Check if the bot has permission to send messages
                 if not channel.permissions_for(channel.guild.me).send_messages:
                     print(f"Do not have permission to send messages in {channel.name}")
                     return
@@ -81,82 +75,54 @@ async def check_new_video():
 
 @bot.command(name='standings')
 async def standings(ctx):
-    try:
-        # Get all values from the sheet
-        all_values = sheet.get_all_values()
+    all_values = sheet.get_all_values()
+    data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
+    response = "**Standings:**\n"
 
-        # Assume headers are on the third row, if they exist
-        # If there are no headers, you can skip this line
-        # headers = all_values[2]
+    for row in data_rows:
+        if all(cell.strip() == '' for cell in row):
+            continue
+        rank = row[2].strip('#')
+        team_name = row[4]
+        coach_name = row[5]
+        record = row[6]
+        response += f"{rank}: {team_name} - {coach_name}, {record}\n"
+    await ctx.send(response)
 
-        # Data is assumed to start on the fourth row (index 3 if header exists)
-        data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
-
-        response = "**Standings:**\n"
-
-        for row in data_rows:
-            # If the row is empty (all cells are empty or whitespace), skip it
-            if all(cell.strip() == '' for cell in row):
-                continue
-
-            # Adjust the indices here to match the structure of your sheet
-            rank = row[2].strip('#')  # Rank is in the second column (index 1)
-            team_name = row[4]        # Team Name is in the fourth column (index 3)
-            coach_name = row[5]       # Coach Name is in the fifth column (index 4)
-            record = row[6]           # Record is in the sixth column (index 5)
-
-            response += f"{rank}: {team_name} - {coach_name}, {record}\n"
-
-        await ctx.send(response)
-    except Exception as e:
-        await ctx.send(f"Error fetching standings: {str(e)}")
-
-logging.debug("Setting up commands...")
 @bot.command(name='team')
 async def team(ctx, *, query: str):
-    try:
-        logging.debug("Opening the worksheet...")
-        draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
-        draft_values = draft_sheet.get_all_values()
-        query_lower = query.lower()
-        
-        response = ""
-        found = False
-        for index, col in enumerate(draft_values[0]):
-            if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
-                team_name = col
-                coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
-                pokemon_formatted = []
-                
-                for i in range(2, len(draft_values)):
-                    if index < len(draft_values[i]):
-                        pokemon_name = draft_values[i][index]
-                        types = draft_values[i][index+1:index+4]
-                        types = [t.strip() for t in types if t.strip()]
-                        if types:
-                            pokemon_info = f"{pokemon_name} - {', '.join(types)}"
-                        else:
-                            pokemon_info = pokemon_name
-                        pokemon_formatted.append(pokemon_info)
-                
-                response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - " + "\n - ".join(pokemon_formatted)
-                found = True
-                break
-        
-        if found:
-            await ctx.send(response)
-        else:
-            await ctx.send("No team or coach found with that name.")
-        
-    except Exception as e:
-        logging.error("Error encountered", exc_info=True)
-        await ctx.send(f"Error retrieving team information: {str(e)}")
+    draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
+    draft_values = draft_sheet.get_all_values()
+    query_lower = query.lower()
+    response = ""
+    found = False
+
+    for index, col in enumerate(draft_values[0]):
+        if col.lower() == query_lower or (draft_values[1][index].lower() == query_lower if len(draft_values) > 1 else False):
+            team_name = col
+            coach_name = draft_values[1][index] if len(draft_values) > 1 else "Not specified"
+            pokemon_formatted = []
+
+            for i in range(2, len(draft_values)):
+                if index < len(draft_values[i]):
+                    pokemon_name = draft_values[i][index]
+                    types = draft_values[i][index+1:index+4]
+                    types = [t.strip() for t in types if t.strip()]
+                    pokemon_info = f"{pokemon_name} - {', '.join(types)}" if types else pokemon_name
+                    pokemon_formatted.append(pokemon_info)
+
+            response = f"**Team Name:** {team_name}\n**Coach Name:** {coach_name}\n**Pokémon:**\n - " + "\n - ".join(pokemon_formatted)
+            found = True
+            break
+
+    if found:
+        await ctx.send(response)
+    else:
+        await ctx.send("No team or coach found with that name.")
 
 @bot.command(name='ping')
 async def ping(ctx):
-    await ctx.send('Pong!')  # Simple command to test if the bot is responsive
-
+    await ctx.send('Pong!')
 
 if __name__ == '__main__':
-    logging.debug("Starting bot...")
     bot.run(DISCORD_TOKEN)
