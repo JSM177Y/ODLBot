@@ -120,6 +120,74 @@ async def team(ctx, *, query: str):
     else:
         await ctx.send("No team or coach found with that name.")
 
+# Define team identifiers
+teams = {
+    1: "Scalchop Samurai",
+    2: "Eevee Elite",
+    3: "Gooning Gamblers",
+    4: "Lavender Town Lucarios",
+    5: "Wixom Wakes",
+    6: "Striking Talons",
+    7: "Shell Shocks",
+    8: "Fregigigas"
+}
+# Define the matchups for each week
+week_matchups = {
+    1: [
+        (1,5),
+        (2,6),
+        (3,7),
+        (4,8)
+    ],
+    2: [
+        (1,3),
+        (2,4),
+        (5,7),
+        (6,8)
+    ],
+    3: [
+        (1,4),
+        (2,3),
+        (4,8),
+        (6,7)
+    ],
+    4: [
+        (1,2),
+        (3,4),
+        (5,6),
+        (7,8)
+    ],
+    5: [
+        (1,6),
+        (2,5),
+        (3,8),
+        (4,7)
+    ],
+    6: [
+        (1,7),
+        (2,8),
+        (3,5),
+        (4,6)
+    ],
+    7: [
+        (1,8),
+        (2,7),
+        (3,6),
+        (4,5)
+    ]
+}
+@bot.command(name='week')
+async def week(ctx, week_number: int):
+    if week_number in week_matchups:
+        matchups = week_matchups[week_number]
+        # Convert team identifiers to names
+        formatted_matchups = [f"{teams[match[0]]} vs {teams[match[1]]}" for match in matchups]
+        response = f"**Matchups for Week {week_number}:**\n" + "\n".join(formatted_matchups)
+    else:
+        response = "Invalid week number. Please enter a number between 1 and 7."
+    
+    await ctx.send(response)
+
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')
