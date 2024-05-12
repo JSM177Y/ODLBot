@@ -91,6 +91,7 @@ async def standings(ctx):
 
 @bot.command(name='mvp')
 async def mvp(ctx):
+    draft_sheet = client.open("Oshawott Draft League").worksheet('MVP Race')
     all_values = sheet.get_all_values()
     data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
     response = "**MVP Race - Top 20:**\n"
