@@ -93,11 +93,18 @@ async def standings(ctx):
 async def mvp(ctx):
     mvp_sheet = client.open("Oshawott Draft League").worksheet('MVP Race')
     all_values = mvp_sheet.get_all_values()
-    data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
+    data_rows = all_values[3:]  # Assumes the first three rows are headers or empty
     response = "**MVP Race - Top 20:**\n"
 
-    # Sorting rows by the 'Diff.' column which is assumed to be at index 10 based on your screenshot
-    sorted_rows = sorted(data_rows, key=lambda x: int(x[10].strip() or 0), reverse=True)
+    # Debugging: Check the structure of the first data row
+    print(data_rows[0])  # Remove or comment this line after debugging
+
+    try:
+        # Sorting rows by the 'Diff.' column
+        sorted_rows = sorted(data_rows, key=lambda x: int(x[9].strip() or 0), reverse=True)
+    except IndexError as e:
+        await ctx.send("Error processing data: " + str(e))
+        return
 
     for row in sorted_rows[:20]:  # Only include the top 20
         if all(cell.strip() == '' for cell in row):
@@ -109,6 +116,7 @@ async def mvp(ctx):
         deaths = row[8]
         diff = row[9]
         response += f"{rank}: {pokemon} - {coach_name}, Kills: {kills}, Deaths: {deaths}, Diff: {diff}\n"
+
     await ctx.send(response)
 
 @bot.command(name='team')
