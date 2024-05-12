@@ -89,6 +89,27 @@ async def standings(ctx):
         response += f"{rank}: {team_name} - {coach_name}, {record}\n"
     await ctx.send(response)
 
+@bot.command(name='mvp')
+async def mvp(ctx):
+    all_values = sheet.get_all_values()
+    data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
+    response = "**MVP Race - Top 20:**\n"
+
+    # Sorting rows by the 'Diff.' column which is assumed to be at index 10 based on your screenshot
+    sorted_rows = sorted(data_rows, key=lambda x: int(x[10].strip() or 0), reverse=True)
+
+    for row in sorted_rows[:20]:  # Only include the top 20
+        if all(cell.strip() == '' for cell in row):
+            continue
+        rank = row[2].strip('#')
+        pokemon = row[3]
+        coach_name = row[5]
+        kills = row[8]
+        deaths = row[9]
+        diff = row[10]
+        response += f"{rank}: {pokemon} - {coach_name}, Kills: {kills}, Deaths: {deaths}, Diff: {diff}\n"
+    await ctx.send(response)
+
 @bot.command(name='team')
 async def team(ctx, *, query: str):
     draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
@@ -125,7 +146,7 @@ teams = {
     1: "Scalchop Samurai",
     2: "Eevee Elite",
     3: "Gooning Gamblers",
-    4: "Lavender Town Lucarios",
+    4: "Medali Mausholds",
     5: "Wixom Wakes",
     6: "Striking Talons",
     7: "Shell Shocks",
