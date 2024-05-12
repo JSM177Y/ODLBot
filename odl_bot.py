@@ -106,7 +106,7 @@ async def mvp(ctx):
         await ctx.send("Error processing data: " + str(e))
         return
 
-    for row in sorted_rows[:20]:  # Only include the top 20
+    for row in sorted_rows[:16]:  # Only include the top 20
         if all(cell.strip() == '' for cell in row):
             continue
         rank = row[2].strip('#')
