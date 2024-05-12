@@ -103,11 +103,11 @@ async def mvp(ctx):
         if all(cell.strip() == '' for cell in row):
             continue
         rank = row[2].strip('#')
-        pokemon = row[3]
+        pokemon = row[4]
         coach_name = row[5]
-        kills = row[8]
-        deaths = row[9]
-        diff = row[10]
+        kills = row[7]
+        deaths = row[8]
+        diff = row[9]
         response += f"{rank}: {pokemon} - {coach_name}, Kills: {kills}, Deaths: {deaths}, Diff: {diff}\n"
     await ctx.send(response)
 
