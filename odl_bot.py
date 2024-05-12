@@ -94,7 +94,7 @@ async def mvp(ctx):
     mvp_sheet = client.open("Oshawott Draft League").worksheet('MVP Race')
     all_values = mvp_sheet.get_all_values()
     data_rows = all_values[3:]  # Assumes the first three rows are headers or empty
-    response = "**MVP Race - Top 20:**\n"
+    response = "**MVP Race - Top 15:**\n"
 
     # Debugging: Check the structure of the first data row
     print(data_rows[0])  # Remove or comment this line after debugging
