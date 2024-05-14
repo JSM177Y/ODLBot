@@ -218,6 +218,93 @@ async def week(ctx, week_number: int):
     
     await ctx.send(response)
 
+@bot.command(name='tera')
+async def tera(ctx):
+    # Prepare the message
+    response = """
+**Terastalisation Rules**
+1. Teams will have 15 points to spend on Tera Captains.
+2. Captaining a Pokemon costs the same as the price you drafted it for.
+3. A Tera Captain will have access to 3 Tera Crystals. One has to be of the same type as the user (1 of 2 STAB's if it is dual type), and then any 2 types, this includes Stellar.
+4. Teams can assign 2 or 3 Tera Captains and must stay within the 15 point budget.
+5. You can only Tera captain Pokemon 9 points and under, with some exceptions...
+
+**Banned from being Tera Captains:**
+- Alcremie
+- Araquanid
+- Basculegion-Female
+- Basculegion-Male
+- Blaziken
+- Cetitan
+- Chandelure
+- Comfey
+- Delphox
+- Diancie
+- Emboar
+- Fezandipiti
+- Floatzel
+- Frosmoth
+- Hisuian Braviary
+- Hitmonlee
+- Hoopa
+- Iron Thorns
+- Kilowattrel
+- Lucario
+- Meloetta
+- Oricorio
+- Paldean Tauros Aqua
+- Paldean Tauros Blaze
+- Polteageist
+- Porygon2
+- Regieleki
+- Registeel
+- Sinistcha
+- Staraptor
+- Torterra
+- Venomoth
+    """
+    
+    await ctx.send(response)
+
+@bot.command(name='banned')
+async def banned(ctx):
+    # Prepare the message
+    response = """
+**Banned Abilities, Items, Moves, and Conditions**
+**Abilities Banned:**
+- Moody
+- Sand Veil
+- Snow Cloak
+- Speed Boost (on Blaziken only)
+- Sheer Force (on Landorus only)
+
+**Items Banned:**
+- Bright Powder
+- Lax Incense
+- King's Rock
+- Focus Band
+- Razor Fang
+- Quick Claw
+
+**Moves Banned:**
+- Accupressure
+- Confuse Ray
+- Flatter
+- Supersonic
+- Swagger
+- Sweet Kiss
+- Shed Tail
+- Last Respects
+- Revival Blessing
+- Take Heart (banned on Manaphy)
+
+**Specific Rules:**
+- Baton Pass is allowed but cannot be used to pass stats or Substitute.
+- If more than 1 Pokémon gets slept due to Effect Spore, Relic Song, or Dire Claw then it will not result in a loss, otherwise sleep clause is in effect.
+    """
+    
+    await ctx.send(response)
+
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')
