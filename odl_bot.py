@@ -159,6 +159,8 @@ def process_evolution_chain(data):
                 if details.get('location'):
                     location = details['location']['name']
                     condition += f" at {location}"
+                if details.get('happiness'):
+                    condition += " with high friendship"
                 if details.get('gender'):
                     condition += f" if gender is {details['gender']}"
 
@@ -175,6 +177,11 @@ def process_evolution_chain(data):
 
             elif trigger == 'other':
                 condition = "Special condition"  # You can expand this with specific cases if available
+
+            elif trigger == 'friendship':
+                condition = "With high friendship"
+                if details.get('time_of_day'):
+                    condition += f" during {details['time_of_day']} time"
 
             evolution_chain += f"{species_name} -> ({condition}) "
         else:
