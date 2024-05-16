@@ -194,6 +194,34 @@ def process_evolution_chain(data):
         current = current['evolves_to'][0]
     return evolution_chain
 
+@bot.command(name='game')
+async def game_info(ctx, *, pokemon_name: str):
+    """Provides the games in which the specified Pokémon can be found."""
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        encounters = data.get('location_area_encounters')
+        if encounters:
+            encounter_response = requests.get(encounters)
+            if encounter_response.status_code == 200:
+                encounter_data = encounter_response.json()
+                games = set()
+                for encounter in encounter_data:
+                    for version_detail in encounter['version_details']:
+                        games.add(version_detail['version']['name'].title())
+                if games:
+                    games_list = ", ".join(sorted(games))
+                    await ctx.send(f"**{pokemon_name.title()}** can be found in the following games: {games_list}")
+                else:
+                    await ctx.send(f"**{pokemon_name.title()}** does not appear to be available in any game through regular encounters.")
+            else:
+                await ctx.send("Could not retrieve encounter information. Please try again later.")
+        else:
+            await ctx.send(f"No encounter data available for **{pokemon_name.title()}**.")
+    else:
+        await ctx.send(f"**{pokemon_name.title()}** not found. Please check the spelling and try again.")
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
