@@ -5,14 +5,14 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
 import requests
+from functools import lru_cache
 
 # Load environment variables
 load_dotenv()
 
 # Variables
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-DISCORD_CHANNEL_ID = 1210301630814224465  # Your Discord channel ID
-GOOGLE_CREDENTIALS_FILE = '/home/jsm177y/ODLBot/odlbot-421819-5192c6bbcd6c.json'  # Path to your .json credentials
+GOOGLE_CREDENTIALS_FILE = '/home/jsm177y/ODLBot/odlbot-421819-5192c6bbcd6c.json'
 
 # Set up Discord intents
 intents = discord.Intents.default()
@@ -28,6 +28,53 @@ scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis
 creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE, scope)
 client = gspread.authorize(creds)
 sheet = client.open("Oshawott Draft League").worksheet('Standings')
+
+# Caching functions
+@lru_cache(maxsize=128)
+def get_pokeapi_data(endpoint: str):
+    """Cached function to get data from the PokéAPI."""
+    url = f"https://pokeapi.co/api/v2/{endpoint}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+# Caching functions
+@lru_cache(maxsize=128)
+def get_pokeapi_data(endpoint: str):
+    """Cached function to get data from the PokéAPI."""
+    url = f"https://pokeapi.co/api/v2/{endpoint}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+@bot.command(name='type')
+async def type_info(ctx, *, poke_type: str):
+    data = get_pokeapi_data(f'type/{poke_type.lower()}')
+    if data:
+        double_damage_to = [type_info['name'] for type_info in data['damage_relations']['double_damage_to']]
+        half_damage_to = [type_info['name'] for type_info in data['damage_relations']['half_damage_to']]
+        no_damage_to = [type_info['name'] for type_info in data['damage_relations']['no_damage_to']]
+        double_damage_from = [type_info['name'] for type_info in data['damage_relations']['double_damage_from']]
+        half_damage_from = [type_info['name'] for type_info in data['damage_relations']['half_damage_from']]
+        no_damage_from = [type_info['name'] for type_info in data['damage_relations']['no_damage_from']]
+
+        embed = discord.Embed(title=f"{poke_type.title()} Type Interactions", color=discord.Color.blue())
+        embed.add_field(name="Super Effective Against", value=', '.join(double_damage_to).title() or "None", inline=False)
+        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
+        embed.add_field(name="Not Very Effective Against", value=', '.join(half_damage_to).title() or "None", inline=False)
+        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
+        embed.add_field(name="No Effect Against", value=', '.join(no_damage_to).title() or "None", inline=False)
+        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
+        embed.add_field(name="Vulnerable To", value=', '.join(double_damage_from).title() or "None", inline=False)
+        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
+        embed.add_field(name="Resistant To", value=', '.join(half_damage_from).title() or "None", inline=False)
+        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
+        embed.add_field(name="Immune To", value=', '.join(no_damage_from).title() or "None", inline=False)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Type not found. Please check the type and try again.")
 
 @bot.event
 async def on_ready():
@@ -264,30 +311,6 @@ async def banned(ctx):
     
     await ctx.send(response)
 
-@bot.command(name='type')
-async def type_info(ctx, *, poke_type: str):
-    url = f"https://pokeapi.co/api/v2/type/{poke_type.lower()}/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        double_damage_to = [type_info['name'] for type_info in data['damage_relations']['double_damage_to']]
-        half_damage_to = [type_info['name'] for type_info in data['damage_relations']['half_damage_to']]
-        no_damage_to = [type_info['name'] for type_info in data['damage_relations']['no_damage_to']]
-        double_damage_from = [type_info['name'] for type_info in data['damage_relations']['double_damage_from']]
-        half_damage_from = [type_info['name'] for type_info in data['damage_relations']['half_damage_from']]
-        no_damage_from = [type_info['name'] for type_info in data['damage_relations']['no_damage_from']]
-
-        embed = discord.Embed(title=f"{poke_type.title()} Type Interactions", color=discord.Color.blue())
-        embed.add_field(name="Super Effective Against", value=', '.join(double_damage_to).title() or "None", inline=False)
-        embed.add_field(name="Not Very Effective Against", value=', '.join(half_damage_to).title() or "None", inline=False)
-        embed.add_field(name="No Effect Against", value=', '.join(no_damage_to).title() or "None", inline=False)
-        embed.add_field(name="Vulnerable To", value=', '.join(double_damage_from).title() or "None", inline=False)
-        embed.add_field(name="Resistant To", value=', '.join(half_damage_from).title() or "None", inline=False)
-        embed.add_field(name="Immune To", value=', '.join(no_damage_from).title() or "None", inline=False)
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Type not found. Please check the type and try again.")
-
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
     url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
@@ -308,6 +331,23 @@ async def pokemon_info(ctx, *, name: str):
         await ctx.send(embed=embed)
     else:
         await ctx.send("Pokémon not found. Please check the spelling and try again.")
+        
+@bot.command(name='ability')
+async def ability_info(ctx, *, ability_name: str):
+    url = f"https://pokeapi.co/api/v2/ability/{ability_name.lower().replace(' ', '-')}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        name = data['name'].replace('-', ' ').title()
+        effect_entries = data['effect_entries']
+        # Find the effect entry in English
+        effect = next((entry['effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+        short_effect = next((entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+
+        embed = discord.Embed(title=f"Ability: {name}", description=f"**Effect**: {effect}\n**Short Effect**: {short_effect}", color=discord.Color.dark_blue())
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Ability not found. Please check the spelling and try again.")
 
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
