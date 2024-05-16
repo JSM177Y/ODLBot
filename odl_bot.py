@@ -142,13 +142,41 @@ def process_evolution_chain(data):
     evolution_chain = ""
     current = data['chain']
     while current:
-        species_name = current['species']['name']
+        species_name = current['species']['name'].title()  # Capitalize the Pokémon name
         if current['evolves_to']:
-            trigger = current['evolves_to'][0]['evolution_details'][0]['trigger']['name']
-            if trigger == 'level-up' and current['evolves_to'][0]['evolution_details'][0].get('min_level'):
-                evolution_chain += f"{species_name} -> (Level {current['evolves_to'][0]['evolution_details'][0]['min_level']}) "
-            else:
-                evolution_chain += f"{species_name} -> ({trigger}) "
+            details = current['evolves_to'][0]['evolution_details'][0]
+            trigger = details['trigger']['name']
+
+            # Process different types of evolution triggers
+            if trigger == 'level-up':
+                level = details.get('min_level')
+                condition = f"Level {level}" if level else "Level up"
+                if details.get('time_of_day'):
+                    condition += f" during {details['time_of_day']} time"
+                if details.get('held_item'):
+                    item = details['held_item']['name']
+                    condition += f" while holding {item}"
+                if details.get('location'):
+                    location = details['location']['name']
+                    condition += f" at {location}"
+                if details.get('gender'):
+                    condition += f" if gender is {details['gender']}"
+
+            elif trigger == 'use-item':
+                item = details['item']['name']
+                condition = f"Use {item}"
+
+            elif trigger == 'trade':
+                if details.get('held_item'):
+                    item = details['held_item']['name']
+                    condition = f"Trade while holding {item}"
+                else:
+                    condition = "Trade"
+
+            elif trigger == 'other':
+                condition = "Special condition"  # You can expand this with specific cases if available
+
+            evolution_chain += f"{species_name} -> ({condition}) "
         else:
             evolution_chain += species_name
             break
