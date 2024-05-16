@@ -76,6 +76,31 @@ async def type_info(ctx, *, poke_type: str):
     else:
         await ctx.send("Type not found. Please check the type and try again.")
 
+@bot.command(name='move')
+async def move_info(ctx, *, move_name: str):
+    data = get_pokeapi_data(f'move/{move_name.lower().replace(" ", "-")}')
+    if data:
+        # Basic move information
+        name = data['name'].replace('-', ' ').title()
+        description = next((entry['flavor_text'] for entry in data['flavor_text_entries'] if entry['language']['name'] == 'en'), "No description available.")
+        power = data.get('power', 'N/A')
+        pp = data.get('pp', 'N/A')
+        accuracy = data.get('accuracy', 'N/A')
+        
+        # Move category (special, physical, status)
+        category = data['damage_class']['name'].title()
+
+        embed = discord.Embed(title=f"Move: {name}", color=discord.Color.gold())
+        embed.add_field(name="Description", value=description, inline=False)
+        embed.add_field(name="Category", value=category, inline=True)
+        embed.add_field(name="Power", value=power if power is not None else "N/A", inline=True)
+        embed.add_field(name="PP", value=pp, inline=True)
+        embed.add_field(name="Accuracy", value=f"{accuracy}%" if accuracy is not None else "N/A", inline=True)
+        
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Move not found. Please check the spelling and try again.")
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
