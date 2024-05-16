@@ -90,12 +90,16 @@ async def move_info(ctx, *, move_name: str):
         # Move category (special, physical, status)
         category = data['damage_class']['name'].title()
 
+        # Fetching additional effect text
+        effect = next((entry['effect'] for entry in data['effect_entries'] if entry['language']['name'] == 'en'), "No additional effects.")
+
         embed = discord.Embed(title=f"Move: {name}", color=discord.Color.gold())
         embed.add_field(name="Description", value=description, inline=False)
         embed.add_field(name="Category", value=category, inline=True)
         embed.add_field(name="Power", value=power if power is not None else "N/A", inline=True)
         embed.add_field(name="PP", value=pp, inline=True)
         embed.add_field(name="Accuracy", value=f"{accuracy}%" if accuracy is not None else "N/A", inline=True)
+        embed.add_field(name="Effect", value=effect, inline=False)
         
         await ctx.send(embed=embed)
     else:
