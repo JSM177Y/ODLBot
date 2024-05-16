@@ -105,6 +105,56 @@ async def move_info(ctx, *, move_name: str):
     else:
         await ctx.send("Move not found. Please check the spelling and try again.")
 
+@bot.command(name='pokemon')
+async def pokemon_info(ctx, *, name: str):
+    data = get_pokeapi_data(f'pokemon/{name.lower()}')
+    if data:
+        # Basic Pokémon information
+        types = [t['type']['name'] for t in data['types']]
+        abilities = [a['ability']['name'] for a in data['abilities']]
+        stats = '\n'.join([f"{s['stat']['name'].title()}: {s['base_stat']}" for s in data['stats']])
+        base_experience = data.get('base_experience', 'N/A')
+        habitat = data.get('habitat', {'name': 'N/A'})['name'] if data.get('habitat') else "N/A"
+
+        # Evolution information (requires fetching from another endpoint)
+        species_url = data['species']['url']
+        species_data = get_pokeapi_data(species_url.replace("https://pokeapi.co/api/v2/", ""))
+        evolution_chain_url = species_data['evolution_chain']['url']
+        evolution_data = get_pokeapi_data(evolution_chain_url.replace("https://pokeapi.co/api/v2/", ""))
+        evolution_details = process_evolution_chain(evolution_data)
+
+        description = f"**{data['name'].title()}**\n"
+        description += f"**Types**: {', '.join(types)}\n"
+        description += f"**Abilities**: {', '.join(abilities)}\n"
+        description += f"**Base Experience**: {base_experience}\n"
+        description += f"**Habitat**: {habitat}\n"
+        description += f"**Stats**:\n{stats}\n"
+        description += f"**Evolution Details**:\n{evolution_details}"
+
+        embed = discord.Embed(description=description, color=discord.Color.green())
+        embed.set_thumbnail(url=data['sprites']['front_default'])
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Pokémon not found. Please check the spelling and try again.")
+
+def process_evolution_chain(data):
+    """Processes the evolution chain data to format it as a readable string."""
+    evolution_chain = ""
+    current = data['chain']
+    while current:
+        species_name = current['species']['name']
+        if current['evolves_to']:
+            trigger = current['evolves_to'][0]['evolution_details'][0]['trigger']['name']
+            if trigger == 'level-up' and current['evolves_to'][0]['evolution_details'][0].get('min_level'):
+                evolution_chain += f"{species_name} -> (Level {current['evolves_to'][0]['evolution_details'][0]['min_level']}) "
+            else:
+                evolution_chain += f"{species_name} -> ({trigger}) "
+        else:
+            evolution_chain += species_name
+            break
+        current = current['evolves_to'][0]
+    return evolution_chain
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
@@ -353,26 +403,6 @@ async def ability_info(ctx, *, ability_name: str):
         await ctx.send(embed=embed)
     else:
         await ctx.send("Ability not found. Please check the spelling and try again.")
-
-@bot.command(name='pokemon')
-async def pokemon_info(ctx, *, name: str):
-    data = get_pokeapi_data(f'pokemon/{name.lower()}')
-    if data:
-        types = [t['type']['name'] for t in data['types']]
-        abilities = [a['ability']['name'] for a in data['abilities']]
-        stats = '\n'.join([f"{s['stat']['name'].title()}: {s['base_stat']}" for s in data['stats']])
-        
-        description = f"**{data['name'].title()}**\n"
-        description += f"**Types**: {', '.join(types)}\n"
-        description += f"**Abilities**: {', '.join(abilities)}\n"
-        description += f"**Stats**:\n{stats}"
-
-        embed = discord.Embed(description=description, color=discord.Color.green())
-        embed.set_thumbnail(url=data['sprites']['front_default'])
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Pokémon not found. Please check the spelling and try again.")
-
 
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
