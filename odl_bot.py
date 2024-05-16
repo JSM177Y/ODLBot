@@ -263,6 +263,29 @@ async def banned(ctx):
     
     await ctx.send(response)
 
+import requests
+
+@bot.command(name='pokemon')
+async def pokemon_info(ctx, *, name: str):
+    url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        types = [t['type']['name'] for t in data['types']]
+        abilities = [a['ability']['name'] for a in data['abilities']]
+        stats = '\n'.join([f"{s['stat']['name'].title()}: {s['base_stat']}" for s in data['stats']])
+        
+        description = f"**{data['name'].title()}**\n"
+        description += f"**Types**: {', '.join(types)}\n"
+        description += f"**Abilities**: {', '.join(abilities)}\n"
+        description += f"**Stats**:\n{stats}"
+
+        embed = discord.Embed(description=description, color=discord.Color.green())
+        embed.set_thumbnail(url=data['sprites']['front_default'])
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Pokémon not found. Please check the spelling and try again.")
+
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
     member = member or ctx.author  # if no member is specified, use the message author
