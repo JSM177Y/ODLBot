@@ -4,6 +4,7 @@ from discord.ext import commands
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -263,7 +264,29 @@ async def banned(ctx):
     
     await ctx.send(response)
 
-import requests
+@bot.command(name='type')
+async def type_info(ctx, *, poke_type: str):
+    url = f"https://pokeapi.co/api/v2/type/{poke_type.lower()}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        double_damage_to = [type_info['name'] for type_info in data['damage_relations']['double_damage_to']]
+        half_damage_to = [type_info['name'] for type_info in data['damage_relations']['half_damage_to']]
+        no_damage_to = [type_info['name'] for type_info in data['damage_relations']['no_damage_to']]
+        double_damage_from = [type_info['name'] for type_info in data['damage_relations']['double_damage_from']]
+        half_damage_from = [type_info['name'] for type_info in data['damage_relations']['half_damage_from']]
+        no_damage_from = [type_info['name'] for type_info in data['damage_relations']['no_damage_from']]
+
+        embed = discord.Embed(title=f"{poke_type.title()} Type Interactions", color=discord.Color.blue())
+        embed.add_field(name="Super Effective Against", value=', '.join(double_damage_to).title() or "None", inline=False)
+        embed.add_field(name="Not Very Effective Against", value=', '.join(half_damage_to).title() or "None", inline=False)
+        embed.add_field(name="No Effect Against", value=', '.join(no_damage_to).title() or "None", inline=False)
+        embed.add_field(name="Vulnerable To", value=', '.join(double_damage_from).title() or "None", inline=False)
+        embed.add_field(name="Resistant To", value=', '.join(half_damage_from).title() or "None", inline=False)
+        embed.add_field(name="Immune To", value=', '.join(no_damage_from).title() or "None", inline=False)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Type not found. Please check the type and try again.")
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
