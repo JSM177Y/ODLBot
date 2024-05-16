@@ -36,34 +36,16 @@ async def on_ready():
 async def standings(ctx):
     all_values = sheet.get_all_values()
     data_rows = all_values[3:]  # This skips the first three rows which are assumed to be headers or empty
-    
+    response = "**Standings:**\n"
     for row in data_rows:
         if all(cell.strip() == '' for cell in row):
             continue
-
         rank = row[2].strip('#')
         team_name = row[4]
         coach_name = row[5]
         record = row[6]
-
-        # Parse record to get wins and losses difference for color coding
-        record_split = record.split('(')[-1].split(')')[0]  # Assumes format "X-Y (Z)"
-        diff = int(record_split) if record_split.isdigit() or record_split.lstrip('-').isdigit() else 0
-
-        # Set color based on the record
-        if diff > 0:
-            # Starts at a very light green (0xCCFFCC) and goes to bright green (0x00FF00)
-            green_intensity = max(204 - 13 * diff, 0)  # Decrease green intensity as diff increases
-            color_value = (green_intensity << 8) | 0xCC  # Combine with a base green
-        elif diff < 0:
-            # Starts at a lighter red (0xFFCCCC) and goes to darker red (0x880000)
-            red_intensity = max(204 + 13 * diff, 0)  # Decrease red intensity as diff becomes more negative
-            color_value = (red_intensity << 16) | 0xCC  # Combine with a base red
-        else:
-            color_value = 0xFFFF66  # Light yellow for neutral
-
-        embed = discord.Embed(title=f"Rank {rank}: {team_name}", description=f"Coach: {coach_name}\nRecord: {record}", color=color_value)
-        await ctx.send(embed=embed)
+        response += f"{rank}: {team_name} - {coach_name}, {record}\n"
+    await ctx.send(response)
 
 @bot.command(name='mvp')
 async def mvp(ctx):
