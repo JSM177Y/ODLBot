@@ -311,12 +311,24 @@ async def banned(ctx):
     
     await ctx.send(response)
 
+@bot.command(name='ability')
+async def ability_info(ctx, *, ability_name: str):
+    data = get_pokeapi_data(f'ability/{ability_name.lower().replace(" ", "-")}')
+    if data:
+        name = data['name'].replace('-', ' ').title()
+        effect_entries = data['effect_entries']
+        effect = next((entry['effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+        short_effect = next((entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+
+        embed = discord.Embed(title=f"Ability: {name}", description=f"**Effect**: {effect}\n**Short Effect**: {short_effect}", color=discord.Color.dark_blue())
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Ability not found. Please check the spelling and try again.")
+
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
-    url = f"https://pokeapi.co/api/v2/pokemon/{name.lower()}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
+    data = get_pokeapi_data(f'pokemon/{name.lower()}')
+    if data:
         types = [t['type']['name'] for t in data['types']]
         abilities = [a['ability']['name'] for a in data['abilities']]
         stats = '\n'.join([f"{s['stat']['name'].title()}: {s['base_stat']}" for s in data['stats']])
@@ -331,23 +343,7 @@ async def pokemon_info(ctx, *, name: str):
         await ctx.send(embed=embed)
     else:
         await ctx.send("Pokémon not found. Please check the spelling and try again.")
-        
-@bot.command(name='ability')
-async def ability_info(ctx, *, ability_name: str):
-    url = f"https://pokeapi.co/api/v2/ability/{ability_name.lower().replace(' ', '-')}/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        name = data['name'].replace('-', ' ').title()
-        effect_entries = data['effect_entries']
-        # Find the effect entry in English
-        effect = next((entry['effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
-        short_effect = next((entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
 
-        embed = discord.Embed(title=f"Ability: {name}", description=f"**Effect**: {effect}\n**Short Effect**: {short_effect}", color=discord.Color.dark_blue())
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Ability not found. Please check the spelling and try again.")
 
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
