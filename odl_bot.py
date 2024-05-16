@@ -144,46 +144,50 @@ def process_evolution_chain(data):
     while current:
         species_name = current['species']['name'].title()  # Capitalize the Pokémon name
         if current['evolves_to']:
-            details = current['evolves_to'][0]['evolution_details'][0]
-            trigger = details['trigger']['name']
+            details_list = current['evolves_to'][0]['evolution_details']
+            conditions = []
+            for details in details_list:
+                trigger = details['trigger']['name']
 
-            # Process different types of evolution triggers
-            if trigger == 'level-up':
-                level = details.get('min_level')
-                condition = f"Level {level}" if level else "Level up"
-                if details.get('time_of_day'):
-                    condition += f" during {details['time_of_day']} time"
-                if details.get('held_item'):
-                    item = details['held_item']['name']
-                    condition += f" while holding {item}"
-                if details.get('location'):
-                    location = details['location']['name']
-                    condition += f" at {location}"
-                if details.get('happiness'):
-                    condition += " with high friendship"
-                if details.get('gender'):
-                    condition += f" if gender is {details['gender']}"
+                if trigger == 'level-up':
+                    level = details.get('min_level')
+                    condition = f"Level {level}" if level else "Level up"
+                    if details.get('time_of_day'):
+                        condition += f" during {details['time_of_day']} time"
+                    if details.get('held_item'):
+                        item = details['held_item']['name']
+                        condition += f" while holding {item}"
+                    if details.get('location'):
+                        location = details['location']['name']
+                        condition += f" at {location}"
+                    if details.get('gender'):
+                        condition += f" if gender is {details['gender']}"
+                    if details.get('min_happiness'):
+                        condition += f" with high friendship ({details['min_happiness']})"
+                    conditions.append(condition)
 
-            elif trigger == 'use-item':
-                item = details['item']['name']
-                condition = f"Use {item}"
+                elif trigger == 'use-item':
+                    item = details['item']['name']
+                    conditions.append(f"Use {item}")
 
-            elif trigger == 'trade':
-                if details.get('held_item'):
-                    item = details['held_item']['name']
-                    condition = f"Trade while holding {item}"
-                else:
-                    condition = "Trade"
+                elif trigger == 'trade':
+                    if details.get('held_item'):
+                        item = details['held_item']['name']
+                        conditions.append(f"Trade while holding {item}")
+                    else:
+                        conditions.append("Trade")
 
-            elif trigger == 'other':
-                condition = "Special condition"  # You can expand this with specific cases if available
+                elif trigger == 'other':
+                    conditions.append("Special condition")  # Can be detailed further as needed
 
-            elif trigger == 'friendship':
-                condition = "With high friendship"
-                if details.get('time_of_day'):
-                    condition += f" during {details['time_of_day']} time"
+                elif trigger == 'friendship':
+                    condition = "With high friendship"
+                    if details.get('time_of_day'):
+                        condition += f" during {details['time_of_day']} time"
+                    conditions.append(condition)
 
-            evolution_chain += f"{species_name} -> ({condition}) "
+            evolution_details = " or ".join(conditions)
+            evolution_chain += f"{species_name} -> ({evolution_details}) "
         else:
             evolution_chain += species_name
             break
