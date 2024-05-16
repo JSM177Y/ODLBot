@@ -47,7 +47,7 @@ async def standings(ctx):
         response += f"{rank}: {team_name} - {coach_name}, {record}\n"
     await ctx.send(response)
 
-bot.command(name='mvp')
+@bot.command(name='mvp')
 async def mvp(ctx):
     mvp_sheet = client.open("Oshawott Draft League").worksheet('MVP Race')
     all_values = mvp_sheet.get_all_values()
