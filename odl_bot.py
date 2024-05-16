@@ -196,7 +196,7 @@ def process_evolution_chain(data):
 
 @bot.command(name='game')
 async def game_info(ctx, *, pokemon_name: str):
-    """Provides the games in which the specified Pokémon can be found."""
+    """Provides the games, DLCs, and special titles in which the specified Pokémon can be found, sorted by generation."""
     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name.lower()}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -207,14 +207,32 @@ async def game_info(ctx, *, pokemon_name: str):
             if encounter_response.status_code == 200:
                 encounter_data = encounter_response.json()
                 games = set()
+                game_generation_mapping = {
+                    "Red": 1, "Blue": 1, "Yellow": 1,
+                    "Gold": 2, "Silver": 2, "Crystal": 2,
+                    "Ruby": 3, "Sapphire": 3, "Emerald": 3, "FireRed": 3, "LeafGreen": 3,
+                    "Diamond": 4, "Pearl": 4, "Platinum": 4, "HeartGold": 4, "SoulSilver": 4,
+                    "Black": 5, "White": 5, "Black 2": 5, "White 2": 5,
+                    "X": 6, "Y": 6, "Omega Ruby": 6, "Alpha Sapphire": 6,
+                    "Sun": 7, "Moon": 7, "Ultra Sun": 7, "Ultra Moon": 7,
+                    "Sword": 8, "Shield": 8, "Legends: Arceus": 8,
+                    "Scarlet": 9, "Violet": 9
+                }
                 for encounter in encounter_data:
                     for version_detail in encounter['version_details']:
-                        games.add(version_detail['version']['name'].title())
+                        version_name = version_detail['version']['name'].title()
+                        if "legends-arceus" in version_detail['version']['name']:
+                            version_name = "Pokémon Legends: Arceus"
+                        elif "dlc" in version_name.lower() or "expansion" in version_name.lower():
+                            version_name += " (DLC)"
+                        games.add(version_name)
                 if games:
-                    games_list = ", ".join(sorted(games))
-                    await ctx.send(f"**{pokemon_name.title()}** can be found in the following games: {games_list}")
+                    # Sort games by the generation they belong to, falling back to alphabetical if not listed
+                    sorted_games = sorted(games, key=lambda x: (game_generation_mapping.get(x.split(" (DLC)")[0], 100), x))
+                    games_list = ", ".join(sorted_games)
+                    await ctx.send(f"**{pokemon_name.title()}** can be found in the following games and DLCs: {games_list}")
                 else:
-                    await ctx.send(f"**{pokemon_name.title()}** does not appear to be available in any game through regular encounters.")
+                    await ctx.send(f"**{pokemon_name.title()}** does not appear to be available in any game or DLC through regular encounters.")
             else:
                 await ctx.send("Could not retrieve encounter information. Please try again later.")
         else:
