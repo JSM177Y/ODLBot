@@ -305,6 +305,16 @@ async def banned(ctx):
     
     await ctx.send(response)
 
+
+@bot.command()
+async def avatar(ctx, *, member: discord.Member = None):
+    """Sends the avatar for a user."""
+    member = member or ctx.author  # if no member is specified, use the message author
+    avatar_url = member.display_avatar.url
+    embed = discord.Embed(title=f"{member.name}'s avatar", color=discord.Color.blue())
+    embed.set_image(url=avatar_url)
+    await ctx.send(embed=embed)
+    
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')
