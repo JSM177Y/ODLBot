@@ -52,11 +52,15 @@ async def standings(ctx):
 
         # Set color based on the record
         if diff > 0:
-            color_value = min(0x00FF00 + (0x000100 * diff), 0x00FF00)  # Scales green, caps at bright green
+            # Starts at a very light green (0xCCFFCC) and goes to bright green (0x00FF00)
+            green_intensity = max(204 - 13 * diff, 0)  # Decrease green intensity as diff increases
+            color_value = (green_intensity << 8) | 0xCC  # Combine with a base green
         elif diff < 0:
-            color_value = max(0xFF0000 + (0x010000 * diff), 0x880000)  # Scales red, down to dark red
+            # Starts at a lighter red (0xFFCCCC) and goes to darker red (0x880000)
+            red_intensity = max(204 + 13 * diff, 0)  # Decrease red intensity as diff becomes more negative
+            color_value = (red_intensity << 16) | 0xCC  # Combine with a base red
         else:
-            color_value = 0xFFFF00  # Yellow for neutral
+            color_value = 0xFFFF66  # Light yellow for neutral
 
         embed = discord.Embed(title=f"Rank {rank}: {team_name}", description=f"Coach: {coach_name}\nRecord: {record}", color=color_value)
         await ctx.send(embed=embed)
