@@ -36,30 +36,39 @@ async def on_ready():
 @tasks.loop(minutes=1)
 async def check_new_video():
     global last_video_id
-    print("Checking for new videos...")
-    request = youtube.search().list(
-        part='snippet',
-        channelId=YOUTUBE_CHANNEL_ID,
-        order='date',
-        type='video',
-        maxResults=1
-    )
-    response = request.execute()
+    try:
+        print("Checking for new videos...")
+        request = youtube.search().list(
+            part='snippet',
+            channelId=YOUTUBE_CHANNEL_ID,
+            order='date',
+            type='video',
+            maxResults=1
+        )
+        response = request.execute()
 
-    if response['items']:
-        latest_video = response['items'][0]
-        video_id = latest_video['id']['videoId']
-        if video_id != last_video_id:
-            last_video_id = video_id
-            video_title = latest_video['snippet']['title']
-            video_url = f'https://www.youtube.com/watch?v={video_id}'
-            channel = bot.get_channel(DISCORD_CHANNEL_ID)
-            if channel:
-                if not channel.permissions_for(channel.guild.me).send_messages:
-                    print(f"Do not have permission to send messages in {channel.name}")
-                    return
-                await channel.send(f'🎥 **New Video Uploaded:** {video_title}\n{video_url}')
-                print(f"Posted new video: {video_title}")
+        if response['items']:
+            latest_video = response['items'][0]
+            video_id = latest_video['id']['videoId']
+            if video_id and video_id != last_video_id:
+                last_video_id = video_id
+                video_title = latest_video['snippet']['title']
+                video_url = f'https://www.youtube.com/watch?v={video_id}'
+                channel = bot.get_channel(DISCORD_CHANNEL_ID)
+                if channel:
+                    if not channel.permissions_for(channel.guild.me).send_messages:
+                        print(f"Do not have permission to send messages in {channel.name}")
+                        return
+                    await channel.send(f'🎥 **New Video Uploaded:** {video_title}\n{video_url}')
+                    print(f"Posted new video: {video_title}")
+                else:
+                    print("Channel not found.")
+            else:
+                print("No new video or same video found.")
+        else:
+            print("No new videos found in the latest API response.")
+    except Exception as e:
+        print(f"Error during YouTube video check: {e}")
 
 if __name__ == '__main__':
     bot.run(DISCORD_TOKEN)
