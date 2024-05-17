@@ -190,6 +190,47 @@ def process_evolution_chain(data):
         current = current['evolves_to'][0]
     return evolution_chain
 
+@bot.command(name='game')
+async def game_info(ctx, *, pokemon_name: str):
+    # Fetching encounter data for the Pokémon
+    encounters = get_pokeapi_data(f'pokemon/{pokemon_name.lower()}/encounters')
+    if not encounters:
+        await ctx.send("No encounter data found for this Pokémon. Please check the Pokémon name and try again.")
+        return
+
+    # To collect unique games and locations
+    game_locations = {}
+
+    # Process each encounter to extract necessary info
+    for encounter in encounters:
+        for version_detail in encounter['version_details']:
+            version_name = version_detail['version']['name'].title().replace('-', ' ')
+            location_name = encounter['location_area']['name'].replace('-', ' ').title()
+
+            # Adding the location to the corresponding game
+            if version_name in game_locations:
+                game_locations[version_name].add(location_name)
+            else:
+                game_locations[version_name] = {location_name}
+
+    # Preparing the response
+    response = f"**{pokemon_name.title()}** can be found in the following games and locations:\n"
+    for game, locations in sorted(game_locations.items()):
+        locations_str = ', '.join(sorted(locations))
+        response += f"**{game}:** {locations_str}\n"
+
+    await ctx.send(response)
+
+# Additional helper function to handle API requests with caching
+@lru_cache(maxsize=128)
+def get_pokeapi_data(endpoint: str):
+    """Cached function to get data from the PokéAPI."""
+    url = f"https://pokeapi.co/api/v2/{endpoint}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
