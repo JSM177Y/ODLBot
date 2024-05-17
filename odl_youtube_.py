@@ -33,7 +33,7 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     check_new_video.start()  # Start the loop to check for new videos
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=10)
 async def check_new_video():
     global last_video_id
     try:
@@ -43,7 +43,7 @@ async def check_new_video():
             channelId=YOUTUBE_CHANNEL_ID,
             order='date',
             type='video',
-            maxResults=1
+            maxResults=5
         )
         response = request.execute()
 
