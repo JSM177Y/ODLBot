@@ -65,44 +65,72 @@ async def type_info(ctx, *, types: str):
             await ctx.send("One or both of the specified types are incorrect. Please check the type names and try again.")
             return
 
-        # Initialize dictionaries to hold effectiveness
-        effectiveness = {
-            'double_damage_to': {},
-            'half_damage_to': {},
-            'no_damage_to': {},
-            'double_damage_from': {},
-            'half_damage_from': {},
-            'no_damage_from': {}
-        }
+        # Prepare the message
+        embed = discord.Embed(title=f"Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
 
-        # Populate effectiveness dictionary with both type data
-        for effect in effectiveness:
-            for t in type_data1['damage_relations'][effect]:
-                effectiveness[effect][t['name']] = effectiveness[effect].get(t['name'], 0) + 1
-            for t in type_data2['damage_relations'][effect]:
-                effectiveness[effect][t['name']] = effectiveness[effect].get(t['name'], 0) + 1
+        # Handling type 1 interactions
+        embed.add_field(name=f"{type_list[0].title()} Type Strengths", value=', '.join([t['name'].title() for t in type_data1['damage_relations']['double_damage_to']]), inline=False)
+        embed.add_field(name=f"{type_list[0].title()} Type Weaknesses", value=', '.join([t['name'].title() for t in type_data1['damage_relations']['double_damage_from']]), inline=False)
+        embed.add_field(name=f"{type_list[0].title()} Type Immunities", value=', '.join([t['name'].title() for t in type_data1['damage_relations']['no_damage_from']]), inline=False)
 
-        # Prepare the response message
-        embed = discord.Embed(title=f"Combined Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
-        effective_attacks = ', '.join([k for k, v in effectiveness['double_damage_to'].items() if v == 2]).title() or "None"
-        weak_attacks = ', '.join([k for k, v in effectiveness['half_damage_to'].items() if v == 2]).title() or "None"
-        ineffective_attacks = ', '.join([k for k, v in effectiveness['no_damage_to'].items() if v >= 1]).title() or "None"
-        vulnerable_to = ', '.join([k for k, v in effectiveness['double_damage_from'].items() if v == 2]).title() or "None"
-        resistant_to = ', '.join([k for k, v in effectiveness['half_damage_from'].items() if v == 2]).title() or "None"
-        immune_to = ', '.join([k for k, v in effectiveness['no_damage_from'].items() if v >= 1]).title() or "None"
+        # Handling type 2 interactions
+        embed.add_field(name=f"{type_list[1].title()} Type Strengths", value=', '.join([t['name'].title() for t in type_data2['damage_relations']['double_damage_to']]), inline=False)
+        embed.add_field(name=f"{type_list[1].title()} Type Weaknesses", value=', '.join([t['name'].title() for t in type_data2['damage_relations']['double_damage_from']]), inline=False)
+        embed.add_field(name=f"{type_list[1].title()} Type Immunities", value=', '.join([t['name'].title() for t in type_data2['damage_relations']['no_damage_from']]), inline=False)
 
-        # Adding fields to embed
-        embed.add_field(name="Super Effective Against", value=effective_attacks, inline=False)
-        embed.add_field(name="Not Very Effective Against", value=weak_attacks, inline=False)
-        embed.add_field(name="No Effect Against", value=ineffective_attacks, inline=False)
-        embed.add_field(name="Vulnerable To", value=vulnerable_to, inline=False)
-        embed.add_field(name="Resistant To", value=resistant_to, inline=False)
-        embed.add_field(name="Immune To", value=immune_to, inline=False)
-        
+        # Calculate combined effects
+        combined_resistances, combined_weaknesses, combined_immunities = combine_types(type_data1, type_data2)
+
+        embed.add_field(name="Combined Resistances (2x less damage)", value=', '.join(combined_resistances), inline=False)
+        embed.add_field(name="Combined Weaknesses (2x more damage)", value=', '.join(combined_weaknesses), inline=False)
+        embed.add_field(name="Combined Immunities (No damage)", value=', '.join(combined_immunities), inline=False)
+
         await ctx.send(embed=embed)
 
     except Exception as e:
         await ctx.send(f"An error occurred: {str(e)}")
+
+def combine_types(type_data1, type_data2):
+    combined_resistances = set()
+    combined_weaknesses = set()
+    combined_immunities = set()
+
+    # Gather all types from damage relations
+    types = set([t['name'] for t in type_data1['damage_relations']['double_damage_from']] +
+                [t['name'] for t in type_data1['damage_relations']['half_damage_from']] +
+                [t['name'] for t in type_data1['damage_relations']['no_damage_from']] +
+                [t['name'] for t in type_data2['damage_relations']['double_damage_from']] +
+                [t['name'] for t in type_data2['damage_relations']['half_damage_from']] +
+                [t['name'] for t in type_data2['damage_relations']['no_damage_from']])
+
+    # Calculate each type's final interaction (weakness, resistance, immunity)
+    for type_name in types:
+        effect1 = get_interaction_effect(type_name, type_data1)
+        effect2 = get_interaction_effect(type_name, type_data2)
+        combined_effect = effect1 * effect2
+
+        if combined_effect == 0:
+            combined_immunities.add(type_name)
+        elif combined_effect == 0.25:
+            combined_resistances.add(type_name + " (4x less damage)")
+        elif combined_effect == 0.5:
+            combined_resistances.add(type_name)
+        elif combined_effect == 2:
+            combined_weaknesses.add(type_name)
+        elif combined_effect == 4:
+            combined_weaknesses.add(type_name + " (4x more damage)")
+
+    return sorted(combined_resistances), sorted(combined_weaknesses), sorted(combined_immunities)
+
+def get_interaction_effect(type_name, type_data):
+    """ Returns the effect multiplier for a given type based on damage relations. """
+    if any(t['name'] == type_name for t in type_data['damage_relations']['no_damage_from']):
+        return 0
+    elif any(t['name'] == type_name for t in type_data['damage_relations']['half_damage_from']):
+        return 0.5
+    elif any(t['name'] == type_name for t in type_data['damage_relations']['double_damage_from']):
+        return 2
+    return 1
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
