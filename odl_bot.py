@@ -77,7 +77,7 @@ async def type_info(ctx, *, types: str):
 
         # Calculate combined interactions
         combined_weak_to = weak_to[0].union(weak_to[1]) - resistant_to[0] - immune_to[0] - resistant_to[1] - immune_to[1]
-        combined_resistant_to = (resistant_to[0].union(resistant_to[1])) - combined_weak_to
+        combined_resistant_to = (((resistant_to[0].union(resistant_to[1])) - weak_to[0]) - weak_to[1])
         combined_immune_to = immune_to[0].union(immune_to[1])
         x4_weak = weak_to[0].intersection(weak_to[1])
         x4_resistant = resistant_to[0].intersection(resistant_to[1])
