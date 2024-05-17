@@ -451,6 +451,13 @@ async def avatar(ctx, *, member: discord.Member = None):
     embed.set_image(url=avatar_url)
     await ctx.send(embed=embed)
 
+@bot.command(name='help')
+async def bot_help(ctx):
+    embed = discord.Embed(title="Bot Commands", description="List of all available commands:", color=discord.Color.green())
+    for command in bot.commands:
+        embed.add_field(name=f"!{command.name}", value=command.help or "No description provided.", inline=False)
+    await ctx.send(embed=embed)
+
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')
