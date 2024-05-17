@@ -50,60 +50,59 @@ def get_pokeapi_data(endpoint: str):
     return None
 
 @bot.command(name='type')
-async def type_info(ctx, *, poke_type: str):
-    data = get_pokeapi_data(f'type/{poke_type.lower()}')
-    if data:
-        double_damage_to = [type_info['name'] for type_info in data['damage_relations']['double_damage_to']]
-        half_damage_to = [type_info['name'] for type_info in data['damage_relations']['half_damage_to']]
-        no_damage_to = [type_info['name'] for type_info in data['damage_relations']['no_damage_to']]
-        double_damage_from = [type_info['name'] for type_info in data['damage_relations']['double_damage_from']]
-        half_damage_from = [type_info['name'] for type_info in data['damage_relations']['half_damage_from']]
-        no_damage_from = [type_info['name'] for type_info in data['damage_relations']['no_damage_from']]
+async def type_info(ctx, *, types: str):
+    try:
+        type_list = types.split()
+        if len(type_list) != 2:
+            await ctx.send("Please enter two types, separated by a space. Example: `!type fire water`")
+            return
 
-        embed = discord.Embed(title=f"{poke_type.title()} Type Interactions", color=discord.Color.blue())
-        embed.add_field(name="Super Effective Against", value=', '.join(double_damage_to).title() or "None", inline=False)
-        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
-        embed.add_field(name="Not Very Effective Against", value=', '.join(half_damage_to).title() or "None", inline=False)
-        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
-        embed.add_field(name="No Effect Against", value=', '.join(no_damage_to).title() or "None", inline=False)
-        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
-        embed.add_field(name="Vulnerable To", value=', '.join(double_damage_from).title() or "None", inline=False)
-        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
-        embed.add_field(name="Resistant To", value=', '.join(half_damage_from).title() or "None", inline=False)
-        embed.add_field(name="--------------------------------", value="\u200b", inline=False)  # Divider
-        embed.add_field(name="Immune To", value=', '.join(no_damage_from).title() or "None", inline=False)
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Type not found. Please check the type and try again.")
+        # Fetch type data for both types
+        type_data1 = get_pokeapi_data(f'type/{type_list[0].lower()}')
+        type_data2 = get_pokeapi_data(f'type/{type_list[1].lower()}')
 
-@bot.command(name='move')
-async def move_info(ctx, *, move_name: str):
-    data = get_pokeapi_data(f'move/{move_name.lower().replace(" ", "-")}')
-    if data:
-        # Basic move information
-        name = data['name'].replace('-', ' ').title()
-        description = next((entry['flavor_text'] for entry in data['flavor_text_entries'] if entry['language']['name'] == 'en'), "No description available.")
-        power = data.get('power', 'N/A')
-        pp = data.get('pp', 'N/A')
-        accuracy = data.get('accuracy', 'N/A')
-        
-        # Move category (special, physical, status)
-        category = data['damage_class']['name'].title()
+        if not type_data1 or not type_data2:
+            await ctx.send("One or both of the specified types are incorrect. Please check the type names and try again.")
+            return
 
-        # Fetching additional effect text
-        effect = next((entry['effect'] for entry in data['effect_entries'] if entry['language']['name'] == 'en'), "No additional effects.")
+        # Initialize dictionaries to hold effectiveness
+        effectiveness = {
+            'double_damage_to': {},
+            'half_damage_to': {},
+            'no_damage_to': {},
+            'double_damage_from': {},
+            'half_damage_from': {},
+            'no_damage_from': {}
+        }
 
-        embed = discord.Embed(title=f"Move: {name}", color=discord.Color.gold())
-        embed.add_field(name="Description", value=description, inline=False)
-        embed.add_field(name="Category", value=category, inline=True)
-        embed.add_field(name="Power", value=power if power is not None else "N/A", inline=True)
-        embed.add_field(name="PP", value=pp, inline=True)
-        embed.add_field(name="Accuracy", value=f"{accuracy}%" if accuracy is not None else "N/A", inline=True)
-        embed.add_field(name="Effect", value=effect, inline=False)
+        # Populate effectiveness dictionary with both type data
+        for effect in effectiveness:
+            for t in type_data1['damage_relations'][effect]:
+                effectiveness[effect][t['name']] = effectiveness[effect].get(t['name'], 0) + 1
+            for t in type_data2['damage_relations'][effect]:
+                effectiveness[effect][t['name']] = effectiveness[effect].get(t['name'], 0) + 1
+
+        # Prepare the response message
+        embed = discord.Embed(title=f"Combined Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
+        effective_attacks = ', '.join([k for k, v in effectiveness['double_damage_to'].items() if v == 2]).title() or "None"
+        weak_attacks = ', '.join([k for k, v in effectiveness['half_damage_to'].items() if v == 2]).title() or "None"
+        ineffective_attacks = ', '.join([k for k, v in effectiveness['no_damage_to'].items() if v >= 1]).title() or "None"
+        vulnerable_to = ', '.join([k for k, v in effectiveness['double_damage_from'].items() if v == 2]).title() or "None"
+        resistant_to = ', '.join([k for k, v in effectiveness['half_damage_from'].items() if v == 2]).title() or "None"
+        immune_to = ', '.join([k for k, v in effectiveness['no_damage_from'].items() if v >= 1]).title() or "None"
+
+        # Adding fields to embed
+        embed.add_field(name="Super Effective Against", value=effective_attacks, inline=False)
+        embed.add_field(name="Not Very Effective Against", value=weak_attacks, inline=False)
+        embed.add_field(name="No Effect Against", value=ineffective_attacks, inline=False)
+        embed.add_field(name="Vulnerable To", value=vulnerable_to, inline=False)
+        embed.add_field(name="Resistant To", value=resistant_to, inline=False)
+        embed.add_field(name="Immune To", value=immune_to, inline=False)
         
         await ctx.send(embed=embed)
-    else:
-        await ctx.send("Move not found. Please check the spelling and try again.")
+
+    except Exception as e:
+        await ctx.send(f"An error occurred: {str(e)}")
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
