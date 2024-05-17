@@ -66,7 +66,7 @@ async def type_info(ctx, *, types: str):
             return
 
         # Calculate combined effects
-        combined_resistances, combined_weaknesses, combined_immunities, combined_4x_resistances, combined_4x_weaknesses, combined_super_effective = combine_types(type_data1, type_data2)
+        combined_resistances, combined_weaknesses, combined_immunities, combined_4x_resistances, combined_4x_weaknesses = combine_types(type_data1, type_data2)
 
         # Super effective lists for individual types
         super_effective1 = [t['name'] for t in type_data1['damage_relations']['double_damage_to']]
@@ -76,7 +76,6 @@ async def type_info(ctx, *, types: str):
         embed = discord.Embed(title=f"Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
         embed.add_field(name=f"{type_list[0].title()} Super Effective Against", value=', '.join(super_effective1).title() or "None", inline=False)
         embed.add_field(name=f"{type_list[1].title()} Super Effective Against", value=', '.join(super_effective2).title() or "None", inline=False)
-        embed.add_field(name="Combined Super Effective Against", value=', '.join(combined_super_effective).title() or "None", inline=False)
         embed.add_field(name="Combined Resistances", value=', '.join(combined_resistances).title() or "None", inline=False)
         embed.add_field(name="Combined Weaknesses", value=', '.join(combined_weaknesses).title() or "None", inline=False)
         embed.add_field(name="Combined Immunities", value=', '.join(combined_immunities).title() or "None", inline=False)
@@ -89,29 +88,34 @@ async def type_info(ctx, *, types: str):
         await ctx.send(f"An error occurred: {str(e)}")
 
 def combine_types(type_data1, type_data2):
-    combined_resistances = set()
-    combined_weaknesses = set()
-    combined_immunities = set()
-    combined_4x_resistances = set()
-    combined_4x_weaknesses = set()
-    combined_super_effective = set()
+    # Handling combined interactions
+    combined_data = handle_combined_type_data(type_data1['damage_relations'], type_data2['damage_relations'])
 
-    # Calculate combined interactions for super effectiveness
-    type_effects = {}
-    for type_data in [type_data1, type_data2]:
-        for t in type_data['damage_relations']['double_damage_to']:
-            if t['name'] in type_effects:
-                type_effects[t['name']] *= 2
-            else:
-                type_effects[t['name']] = 2
+    return combined_data['resistances'], combined_data['weaknesses'], combined_data['immunities'], combined_data['4x_resistances'], combined_data['4x_weaknesses']
 
-    for type_name, effect in type_effects.items():
-        if effect == 4:  # Both types are super effective
-            combined_4x_weaknesses.add(type_name)
-        elif effect == 2:  # Only one type is super effective
-            combined_super_effective.add(type_name)
+def handle_combined_type_data(relations1, relations2):
+    # Define dictionaries to hold types and their effects
+    effects = {
+        'resistances': set(),
+        'weaknesses': set(),
+        'immunities': set(),
+        '4x_resistances': set(),
+        '4x_weaknesses': set()
+    }
 
-    return sorted(combined_resistances), sorted(combined_weaknesses), sorted(combined_immunities), sorted(combined_4x_resistances), sorted(combined_4x_weaknesses), sorted(combined_super_effective)
+    # Process each relation type (resistances, weaknesses, and immunities)
+    for key in effects.keys():
+        types1 = {item['name'] for item in relations1.get(f'{key}', [])}
+        types2 = {item['name'] for item in relations2.get(f'{key}', [])}
+        combined = types1 & types2  # Intersection finds types common to both
+
+        # Update the main and 4x dictionaries based on count of occurrences
+        single = types1 ^ types2  # Symmetric difference finds types unique to either
+        effects[key] = sorted(single)
+        if key in ['weaknesses', 'resistances']:
+            effects[f'4x_{key}'] = sorted(combined)
+
+    return effects
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
