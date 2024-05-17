@@ -54,68 +54,48 @@ async def type_info(ctx, *, types: str):
     try:
         type_list = types.split()
         if len(type_list) != 2:
-            await ctx.send("Please enter two types, separated by a space. Example: `!type fire water`")
+            await ctx.send("Please provide exactly two types.")
             return
 
-        # Fetch type data for both types
-        type_data1 = get_pokeapi_data(f'type/{type_list[0].lower()}')
-        type_data2 = get_pokeapi_data(f'type/{type_list[1].lower()}')
-
-        if not type_data1 or not type_data2:
-            await ctx.send("One or both of the specified types are incorrect. Please check the type names and try again.")
+        type_data = [get_pokeapi_data(f'type/{t.lower()}') for t in type_list]
+        if None in type_data:
+            await ctx.send("One of the types provided was not found. Please check the types and try again.")
             return
 
-        # Calculate combined effects
-        combined_resistances, combined_weaknesses, combined_immunities, combined_4x_resistances, combined_4x_weaknesses = combine_types(type_data1, type_data2)
+        # Prepare the data containers
+        effective_against = [set(), set()]
+        weak_to = [set(), set()]
+        resistant_to = [set(), set()]
+        immune_to = [set(), set()]
 
-        # Super effective lists for individual types
-        super_effective1 = [t['name'] for t in type_data1['damage_relations']['double_damage_to']]
-        super_effective2 = [t['name'] for t in type_data2['damage_relations']['double_damage_to']]
+        # Fill the containers with data from API
+        for i, data in enumerate(type_data):
+            effective_against[i].update([t['name'] for t in data['damage_relations']['double_damage_to']])
+            weak_to[i].update([t['name'] for t in data['damage_relations']['double_damage_from']])
+            resistant_to[i].update([t['name'] for t in data['damage_relations']['half_damage_from']])
+            immune_to[i].update([t['name'] for t in data['damage_relations']['no_damage_from']])
 
-        # Prepare the message
+        # Calculate combined interactions
+        combined_weak_to = weak_to[0].union(weak_to[1]) - resistant_to[0] - immune_to[0] - resistant_to[1] - immune_to[1]
+        combined_resistant_to = resistant_to[0].intersection(resistant_to[1])
+        combined_immune_to = immune_to[0].union(immune_to[1])
+        x4_weak = weak_to[0].intersection(weak_to[1])
+        x4_resistant = resistant_to[0].intersection(resistant_to[1])
+
+        # Prepare the embed
         embed = discord.Embed(title=f"Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
-        embed.add_field(name=f"{type_list[0].title()} Super Effective Against", value=', '.join(super_effective1).title() or "None", inline=False)
-        embed.add_field(name=f"{type_list[1].title()} Super Effective Against", value=', '.join(super_effective2).title() or "None", inline=False)
-        embed.add_field(name="Combined Resistances", value=', '.join(combined_resistances).title() or "None", inline=False)
-        embed.add_field(name="Combined Weaknesses", value=', '.join(combined_weaknesses).title() or "None", inline=False)
-        embed.add_field(name="Combined Immunities", value=', '.join(combined_immunities).title() or "None", inline=False)
-        embed.add_field(name="4x Resistances", value=', '.join(combined_4x_resistances).title() or "None", inline=False)
-        embed.add_field(name="4x Weaknesses", value=', '.join(combined_4x_weaknesses).title() or "None", inline=False)
+        embed.add_field(name=f"{type_list[0].title()} is Super Effective Against", value=', '.join(effective_against[0]).title() or "None", inline=False)
+        embed.add_field(name=f"{type_list[1].title()} is Super Effective Against", value=', '.join(effective_against[1]).title() or "None", inline=False)
+        embed.add_field(name="Combined Weak To", value=', '.join(combined_weak_to).title() or "None", inline=False)
+        embed.add_field(name="Combined Resistant To", value=', '.join(combined_resistant_to).title() or "None", inline=False)
+        embed.add_field(name="Combined Immune To", value=', '.join(combined_immune_to).title() or "None", inline=False)
+        embed.add_field(name="4x Weak To", value=', '.join(x4_weak).title() or "None", inline=False)
+        embed.add_field(name="4x Resistant To", value=', '.join(x4_resistant).title() or "None", inline=False)
 
         await ctx.send(embed=embed)
 
     except Exception as e:
         await ctx.send(f"An error occurred: {str(e)}")
-
-def combine_types(type_data1, type_data2):
-    # Handling combined interactions
-    combined_data = handle_combined_type_data(type_data1['damage_relations'], type_data2['damage_relations'])
-
-    return combined_data['resistances'], combined_data['weaknesses'], combined_data['immunities'], combined_data['4x_resistances'], combined_data['4x_weaknesses']
-
-def handle_combined_type_data(relations1, relations2):
-    # Define dictionaries to hold types and their effects
-    effects = {
-        'resistances': set(),
-        'weaknesses': set(),
-        'immunities': set(),
-        '4x_resistances': set(),
-        '4x_weaknesses': set()
-    }
-
-    # Process each relation type (resistances, weaknesses, and immunities)
-    for key in effects.keys():
-        types1 = {item['name'] for item in relations1.get(f'{key}', [])}
-        types2 = {item['name'] for item in relations2.get(f'{key}', [])}
-        combined = types1 & types2  # Intersection finds types common to both
-
-        # Update the main and 4x dictionaries based on count of occurrences
-        single = types1 ^ types2  # Symmetric difference finds types unique to either
-        effects[key] = sorted(single)
-        if key in ['weaknesses', 'resistances']:
-            effects[f'4x_{key}'] = sorted(combined)
-
-    return effects
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
