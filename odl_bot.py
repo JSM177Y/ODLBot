@@ -51,38 +51,45 @@ def get_pokeapi_data(endpoint: str):
 
 @bot.command(name='type')
 async def type_info(ctx, *, types: str):
-    try:
-        type_list = types.split()
-        if len(type_list) != 2:
-            await ctx.send("Please provide exactly two types.")
-            return
+    type_list = types.split()
+    if len(type_list) > 2:
+        await ctx.send("Please provide one or two types only.")
+        return
 
-        type_data = [get_pokeapi_data(f'type/{t.lower()}') for t in type_list]
-        if None in type_data:
-            await ctx.send("One of the types provided was not found. Please check the types and try again.")
-            return
+    type_data = [get_pokeapi_data(f'type/{t.lower()}') for t in type_list]
+    if None in type_data:
+        await ctx.send("One of the types provided was not found. Please check the types and try again.")
+        return
 
-        # Prepare the data containers
-        effective_against = [set(), set()]
-        weak_to = [set(), set()]
-        resistant_to = [set(), set()]
-        immune_to = [set(), set()]
+    # Prepare the data containers
+    effective_against = [set(), set()]
+    weak_to = [set(), set()]
+    resistant_to = [set(), set()]
+    immune_to = [set(), set()]
 
-        # Fill the containers with data from API
-        for i, data in enumerate(type_data):
-            effective_against[i].update([t['name'] for t in data['damage_relations']['double_damage_to']])
-            weak_to[i].update([t['name'] for t in data['damage_relations']['double_damage_from']])
-            resistant_to[i].update([t['name'] for t in data['damage_relations']['half_damage_from']])
-            immune_to[i].update([t['name'] for t in data['damage_relations']['no_damage_from']])
+    # Fill the containers with data from API
+    for i, data in enumerate(type_data):
+        effective_against[i].update([t['name'] for t in data['damage_relations']['double_damage_to']])
+        weak_to[i].update([t['name'] for t in data['damage_relations']['double_damage_from']])
+        resistant_to[i].update([t['name'] for t in data['damage_relations']['half_damage_from']])
+        immune_to[i].update([t['name'] for t in data['damage_relations']['no_damage_from']])
 
+    # Displaying types differently based on the number of types provided
+    if len(type_list) == 1:
+        # If only one type, simplify the output
+        embed = discord.Embed(title=f"{type_list[0].title()} Type Interactions", color=discord.Color.blue())
+        embed.add_field(name="Super Effective Against", value=', '.join(effective_against[0]).title() or "None", inline=False)
+        embed.add_field(name="Weak To", value=', '.join(weak_to[0]).title() or "None", inline=False)
+        embed.add_field(name="Resistant To", value=', '.join(resistant_to[0]).title() or "None", inline=False)
+        embed.add_field(name="Immune To", value=', '.join(immune_to[0]).title() or "None", inline=False)
+    else:
         # Calculate combined interactions
         combined_weak_to = weak_to[0].union(weak_to[1]) - resistant_to[0] - immune_to[0] - resistant_to[1] - immune_to[1]
-        combined_resistant_to = (((resistant_to[0].union(resistant_to[1])) - weak_to[0]) - weak_to[1])
+        combined_resistant_to = ((resistant_to[0].union(resistant_to[1])) - weak_to[0]) - weak_to[1]
         combined_immune_to = immune_to[0].union(immune_to[1])
         x4_weak = weak_to[0].intersection(weak_to[1])
         x4_resistant = resistant_to[0].intersection(resistant_to[1])
 
-        # Prepare the embed
         embed = discord.Embed(title=f"Type Interactions for {type_list[0].title()} and {type_list[1].title()}", color=discord.Color.blue())
         embed.add_field(name=f"{type_list[0].title()} is Super Effective Against", value=', '.join(effective_against[0]).title() or "None", inline=False)
         embed.add_field(name=f"{type_list[1].title()} is Super Effective Against", value=', '.join(effective_against[1]).title() or "None", inline=False)
@@ -92,10 +99,7 @@ async def type_info(ctx, *, types: str):
         embed.add_field(name="4x Weak To", value=', '.join(x4_weak).title() or "None", inline=False)
         embed.add_field(name="4x Resistant To", value=', '.join(x4_resistant).title() or "None", inline=False)
 
-        await ctx.send(embed=embed)
-
-    except Exception as e:
-        await ctx.send(f"An error occurred: {str(e)}")
+    await ctx.send(embed=embed)
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
