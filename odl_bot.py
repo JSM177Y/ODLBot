@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
 import requests
 from functools import lru_cache
+from thefuzz import fuzz, process  # Fuzzy string matching
 
 # Load environment variables
 load_dotenv()
@@ -29,15 +30,39 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE
 client = gspread.authorize(creds)
 sheet = client.open("Oshawott Draft League").worksheet('Standings')
 
-# Caching functions
-@lru_cache(maxsize=128)
-def get_pokeapi_data(endpoint: str):
-    """Cached function to get data from the PokéAPI."""
-    url = f"https://pokeapi.co/api/v2/{endpoint}/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
+# Fetch team names from the "Data" sheet
+data_sheet = client.open("Oshawott Draft League").worksheet('Data')
+team_names = data_sheet.get('D2:D9')
+
+# Convert the fetched data to a dictionary
+teams = {index + 1: team[0] for index, team in enumerate(team_names)}
+
+# Fetch matchup data
+matchup_data = data_sheet.get_all_values()
+week_matchups = {}
+
+# Process the matchup data
+for row in matchup_data[1:]:  # Skip the header row
+    try:
+        week = int(row[7])  # Column H
+        team1 = int(row[9])  # Column J
+        team2 = int(row[17])  # Column R
+
+        if week not in week_matchups:
+            week_matchups[week] = set()  # Use a set to prevent duplicates
+        week_matchups[week].add((team1, team2))
+    except (ValueError, IndexError):
+        continue
+
+# Load data for fuzzy matching
+pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
+pokemon_names = [p['name'] for p in pokemon_data]
+move_data = get_pokeapi_data('move?limit=1000')['results']
+move_names = [m['name'] for m in move_data]
+ability_data = get_pokeapi_data('ability?limit=1000')['results']
+ability_names = [a['name'] for a in ability_data]
+type_data = get_pokeapi_data('type')['results']
+type_names = [t['name'] for t in type_data]
 
 # Caching functions
 @lru_cache(maxsize=128)
@@ -48,6 +73,22 @@ def get_pokeapi_data(endpoint: str):
     if response.status_code == 200:
         return response.json()
     return None
+
+def correct_spelling(name, category):
+    """Function to correct spelling using fuzzy matching."""
+    if category == 'pokemon':
+        choices = pokemon_names
+    elif category == 'move':
+        choices = move_names
+    elif category == 'ability':
+        choices = ability_names
+    elif category == 'type':
+        choices = type_names
+    else:
+        return name
+
+    match, score = process.extractOne(name, choices)
+    return match if score > 80 else name
 
 @bot.command(name='type')
 async def type_info(ctx, *, types: str):
@@ -56,6 +97,7 @@ async def type_info(ctx, *, types: str):
         await ctx.send("Please provide one or two types only.")
         return
 
+    type_list = [correct_spelling(t, 'type') for t in type_list]
     type_data = [get_pokeapi_data(f'type/{t.lower()}') for t in type_list]
     if None in type_data:
         await ctx.send("One of the types provided was not found. Please check the types and try again.")
@@ -103,6 +145,7 @@ async def type_info(ctx, *, types: str):
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
+    name = correct_spelling(name, 'pokemon')
     data = get_pokeapi_data(f'pokemon/{name.lower()}')
     if data:
         # Basic Pokémon information
@@ -241,6 +284,7 @@ async def mvp(ctx):
 
 @bot.command(name='team')
 async def team(ctx, *, query: str):
+    query = correct_spelling(query, 'pokemon')
     draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
     draft_values = draft_sheet.get_all_values()
     query_lower = query.lower()
@@ -269,30 +313,6 @@ async def team(ctx, *, query: str):
         await ctx.send(response)
     else:
         await ctx.send("No team or coach found with that name.")
-
-# Fetch team names from the "Data" sheet
-data_sheet = client.open("Oshawott Draft League").worksheet('Data')
-team_names = data_sheet.get('D2:D9')
-
-# Convert the fetched data to a dictionary
-teams = {index + 1: team[0] for index, team in enumerate(team_names)}
-
-# Fetch matchup data
-matchup_data = data_sheet.get_all_values()
-week_matchups = {}
-
-# Process the matchup data
-for row in matchup_data[1:]:  # Skip the header row
-    try:
-        week = int(row[7])  # Column H
-        team1 = int(row[9])  # Column J
-        team2 = int(row[17])  # Column R
-
-        if week not in week_matchups:
-            week_matchups[week] = set()  # Use a set to prevent duplicates
-        week_matchups[week].add((team1, team2))
-    except (ValueError, IndexError):
-        continue
 
 @bot.command(name='week')
 async def week(ctx, week_number: int):
@@ -400,6 +420,7 @@ async def banned(ctx):
 
 @bot.command(name='ability')
 async def ability_info(ctx, *, ability_name: str):
+    ability_name = correct_spelling(ability_name, 'ability')
     data = get_pokeapi_data(f'ability/{ability_name.lower().replace(" ", "-")}')
     if data:
         name = data['name'].replace('-', ' ').title()
