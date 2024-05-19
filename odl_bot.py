@@ -84,7 +84,21 @@ def correct_spelling(name, category):
 
 # Initialize fuzzy matching data
 pokemon_names = []
-special_forms = ['samurott-hisui', 'zoroark-hisui', 'growlithe-hisui', 'voltorb-hisui', 'braviary-hisui', 'sneasel-hisui', 'avalugg-hisui', 'typhlosion-hisui', 'decidueye-hisui']
+special_forms = [
+    'rattata-alola', 'raticate-alola', 'raichu-alola', 'sandshrew-alola', 'sandslash-alola', 
+    'vulpix-alola', 'ninetales-alola', 'diglett-alola', 'dugtrio-alola', 'meowth-alola', 
+    'persian-alola', 'geodude-alola', 'graveler-alola', 'golem-alola', 'grimer-alola', 
+    'muk-alola', 'exeggutor-alola', 'marowak-alola', 
+    'meowth-galar', 'ponyta-galar', 'rapidash-galar', 'slowpoke-galar', 'slowbro-galar', 
+    'farfetchd-galar', 'weezing-galar', 'mr-mime-galar', 'articuno-galar', 'zapdos-galar', 
+    'moltres-galar', 'slowking-galar', 'corsola-galar', 'zigzagoon-galar', 'linoone-galar', 
+    'darumaka-galar', 'darmanitan-galar', 'yamask-galar', 'stunfisk-galar', 
+    'growlithe-hisui', 'arcanine-hisui', 'voltorb-hisui', 'electrode-hisui', 'typhlosion-hisui', 
+    'qwilfish-hisui', 'sneasel-hisui', 'samurott-hisui', 'lilligant-hisui', 'zorua-hisui', 
+    'zoroark-hisui', 'braviary-hisui', 'sliggoo-hisui', 'goodra-hisui', 'avalugg-hisui', 
+    'decidueye-hisui', 
+    'wooper-paldea', 'tauros-paldea-combat', 'tauros-paldea-blaze', 'tauros-paldea-aqua'
+]
 move_names = []
 ability_names = []
 type_names = []
