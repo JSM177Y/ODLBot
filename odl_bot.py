@@ -345,12 +345,12 @@ async def week(ctx, week_number: int):
 async def tera(ctx):
     # Fetch the data from the "Rules" sheet, range D11:D16
     rules_sheet = client.open("Oshawott Draft League").worksheet('Rules')
-    tera_rules = rules_sheet.get('D11:D16')
+    tera_rules = rules_sheet.get('C11:D16')
 
     # Prepare the response message
     response = "**Terastalisation Rules**\n"
     for rule in tera_rules:
-        response += f"- {rule[0]}\n"
+        response += f"{rule[0]}\n"
     
     await ctx.send(response)
 
