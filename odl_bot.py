@@ -65,24 +65,6 @@ def get_pokeapi_data(endpoint: str):
         return response.json()
     return None
 
-# Function to scrape battle clauses from Smogon
-def fetch_battle_clauses():
-    url = 'https://www.smogon.com/dex/ss/formats/ou/'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    clauses_section = soup.find('section', {'id': 'clauses'})
-
-    if not clauses_section:
-        return "No battle clauses found."
-
-    clauses = []
-    for clause in clauses_section.find_all('li'):
-        clause_name = clause.find('b').text if clause.find('b') else 'Unknown Clause'
-        clause_description = clause.text[len(clause_name):].strip() if clause.find('b') else clause.text.strip()
-        clauses.append(f"**{clause_name}**: {clause_description}")
-
-    return '\n'.join(clauses)
-
 # Function to correct spelling using fuzzy matching
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
@@ -469,11 +451,6 @@ async def avatar(ctx, *, member: discord.Member = None):
     embed.set_image(url=avatar_url)
     await ctx.send(embed=embed)
 
-@bot.command(name='clauses')
-async def clauses(ctx):
-    clauses = fetch_battle_clauses()
-    await ctx.send(clauses)
-    
 @bot.command(name='ping')
 async def ping(ctx):
     await ctx.send('Pong!')
