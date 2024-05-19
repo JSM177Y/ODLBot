@@ -6,7 +6,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
 import requests
 from functools import lru_cache
-from thefuzz import fuzz, process  # Fuzzy string matching
 
 # Load environment variables
 load_dotenv()
@@ -30,29 +29,15 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_FILE
 client = gspread.authorize(creds)
 sheet = client.open("Oshawott Draft League").worksheet('Standings')
 
-# Fetch team names from the "Data" sheet
-data_sheet = client.open("Oshawott Draft League").worksheet('Data')
-team_names = data_sheet.get('D2:D9')
-
-# Convert the fetched data to a dictionary
-teams = {index + 1: team[0] for index, team in enumerate(team_names)}
-
-# Fetch matchup data
-matchup_data = data_sheet.get_all_values()
-week_matchups = {}
-
-# Process the matchup data
-for row in matchup_data[1:]:  # Skip the header row
-    try:
-        week = int(row[7])  # Column H
-        team1 = int(row[9])  # Column J
-        team2 = int(row[17])  # Column R
-
-        if week not in week_matchups:
-            week_matchups[week] = set()  # Use a set to prevent duplicates
-        week_matchups[week].add((team1, team2))
-    except (ValueError, IndexError):
-        continue
+# Caching functions
+@lru_cache(maxsize=128)
+def get_pokeapi_data(endpoint: str):
+    """Cached function to get data from the PokéAPI."""
+    url = f"https://pokeapi.co/api/v2/{endpoint}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
 
 # Caching functions
 @lru_cache(maxsize=128)
@@ -64,60 +49,6 @@ def get_pokeapi_data(endpoint: str):
         return response.json()
     return None
 
-# Function to correct spelling using fuzzy matching
-def correct_spelling(name, category):
-    """Function to correct spelling using fuzzy matching."""
-    if category == 'pokemon':
-        choices = pokemon_names + special_forms
-    elif category == 'move':
-        choices = move_names
-    elif category == 'ability':
-        choices = ability_names
-    elif category == 'type':
-        choices = type_names
-    else:
-        return name
-
-    match, score = process.extractOne(name, choices, scorer=fuzz.ratio)
-    return match if score > 70 else name  # Adjust threshold to 70
-
-# Initialize fuzzy matching data
-pokemon_names = []
-special_forms = [
-    'rattata-alola', 'raticate-alola', 'raichu-alola', 'sandshrew-alola', 'sandslash-alola', 
-    'vulpix-alola', 'ninetales-alola', 'diglett-alola', 'dugtrio-alola', 'meowth-alola', 
-    'persian-alola', 'geodude-alola', 'graveler-alola', 'golem-alola', 'grimer-alola', 
-    'muk-alola', 'exeggutor-alola', 'marowak-alola', 
-    'meowth-galar', 'ponyta-galar', 'rapidash-galar', 'slowpoke-galar', 'slowbro-galar', 
-    'farfetchd-galar', 'weezing-galar', 'mr-mime-galar', 'articuno-galar', 'zapdos-galar', 
-    'moltres-galar', 'slowking-galar', 'corsola-galar', 'zigzagoon-galar', 'linoone-galar', 
-    'darumaka-galar', 'darmanitan-galar', 'yamask-galar', 'stunfisk-galar', 
-    'growlithe-hisui', 'arcanine-hisui', 'voltorb-hisui', 'electrode-hisui', 'typhlosion-hisui', 
-    'qwilfish-hisui', 'sneasel-hisui', 'samurott-hisui', 'lilligant-hisui', 'zorua-hisui', 
-    'zoroark-hisui', 'braviary-hisui', 'sliggoo-hisui', 'goodra-hisui', 'avalugg-hisui', 
-    'decidueye-hisui', 
-    'wooper-paldea', 'tauros-paldea-combat', 'tauros-paldea-blaze', 'tauros-paldea-aqua'
-]
-move_names = []
-ability_names = []
-type_names = []
-
-@bot.event
-async def on_ready():
-    global pokemon_names, special_forms, move_names, ability_names, type_names
-
-    # Load data for fuzzy matching
-    pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
-    pokemon_names = [p['name'] for p in pokemon_data]
-    move_data = get_pokeapi_data('move?limit=1000')['results']
-    move_names = [m['name'] for m in move_data]
-    ability_data = get_pokeapi_data('ability?limit=1000')['results']
-    ability_names = [a['name'] for a in ability_data]
-    type_data = get_pokeapi_data('type')['results']
-    type_names = [t['name'] for t in type_data]
-    
-    print(f'{bot.user.name} has connected to Discord!')
-
 @bot.command(name='type')
 async def type_info(ctx, *, types: str):
     type_list = types.split()
@@ -125,7 +56,6 @@ async def type_info(ctx, *, types: str):
         await ctx.send("Please provide one or two types only.")
         return
 
-    type_list = [correct_spelling(t, 'type') for t in type_list]
     type_data = [get_pokeapi_data(f'type/{t.lower()}') for t in type_list]
     if None in type_data:
         await ctx.send("One of the types provided was not found. Please check the types and try again.")
@@ -173,7 +103,6 @@ async def type_info(ctx, *, types: str):
 
 @bot.command(name='pokemon')
 async def pokemon_info(ctx, *, name: str):
-    name = correct_spelling(name, 'pokemon')
     data = get_pokeapi_data(f'pokemon/{name.lower()}')
     if data:
         # Basic Pokémon information
@@ -261,6 +190,10 @@ def process_evolution_chain(data):
         current = current['evolves_to'][0]
     return evolution_chain
 
+@bot.event
+async def on_ready():
+    print(f'{bot.user.name} has connected to Discord!')
+
 @bot.command(name='standings')
 async def standings(ctx):
     all_values = sheet.get_all_values()
@@ -308,7 +241,6 @@ async def mvp(ctx):
 
 @bot.command(name='team')
 async def team(ctx, *, query: str):
-    query = correct_spelling(query, 'pokemon')
     draft_sheet = client.open("Oshawott Draft League").worksheet('Draft But Simple')
     draft_values = draft_sheet.get_all_values()
     query_lower = query.lower()
@@ -338,17 +270,68 @@ async def team(ctx, *, query: str):
     else:
         await ctx.send("No team or coach found with that name.")
 
+# Define team identifiers
+teams = {
+    1: "Scalchop Samurai",
+    2: "Eevee Elite",
+    3: "Gooning Gamblers",
+    4: "Medali Mausholds",
+    5: "Wixom Wakes",
+    6: "Striking Talons",
+    7: "Shell Shocks",
+    8: "Fregigigas"
+}
+# Define the matchups for each week
+week_matchups = {
+    1: [
+        (1,5),
+        (2,6),
+        (3,7),
+        (4,8)
+    ],
+    2: [
+        (1,3),
+        (2,4),
+        (5,7),
+        (6,8)
+    ],
+    3: [
+        (1,4),
+        (2,3),
+        (5,8),
+        (6,7)
+    ],
+    4: [
+        (1,2),
+        (3,4),
+        (5,6),
+        (7,8)
+    ],
+    5: [
+        (1,6),
+        (2,5),
+        (3,8),
+        (4,7)
+    ],
+    6: [
+        (1,7),
+        (2,8),
+        (3,5),
+        (4,6)
+    ],
+    7: [
+        (1,8),
+        (2,7),
+        (3,6),
+        (4,5)
+    ]
+}
 @bot.command(name='week')
 async def week(ctx, week_number: int):
     if week_number in week_matchups:
         matchups = week_matchups[week_number]
-        # Convert team identifiers to names and avoid duplicates
-        seen_matchups = set()
-        formatted_matchups = []
-        for match in matchups:
-            if match not in seen_matchups and (match[1], match[0]) not in seen_matchups:
-                seen_matchups.add(match)
-                formatted_matchups.append(f"{teams[match[0]]} vs {teams[match[1]]}")
+        # Convert team identifiers to names
+        formatted_matchups = [f"{teams[match[0]]} vs {teams[match[1]]}" for match in matchups]
         response = f"**Matchups for Week {week_number}:**\n" + "\n".join(formatted_matchups)
     else:
         response = "Invalid week number. Please enter a number between 1 and 7."
@@ -357,15 +340,49 @@ async def week(ctx, week_number: int):
 
 @bot.command(name='tera')
 async def tera(ctx):
-    # Fetch the data from the "Rules" sheet, ranges C11:C16 and D11:D16
-    rules_sheet = client.open("Oshawott Draft League").worksheet('Rules')
-    tera_numbers = rules_sheet.get('C11:C16')
-    tera_rules = rules_sheet.get('D11:D16')
+    # Prepare the message
+    response = """
+**Terastalisation Rules**
+1. Teams will have 15 points to spend on Tera Captains.
+2. Captaining a Pokemon costs the same as the price you drafted it for.
+3. A Tera Captain will have access to 3 Tera Crystals. One has to be of the same type as the user (1 of 2 STAB's if it is dual type), and then any 2 types, this includes Stellar.
+4. Teams can assign 2 or 3 Tera Captains and must stay within the 15 point budget.
+5. You can only Tera captain Pokemon 9 points and under, with some exceptions...
 
-    # Prepare the response message
-    response = "**Terastalisation Rules**\n"
-    for number, rule in zip(tera_numbers, tera_rules):
-        response += f"{number[0]} {rule[0]}\n"
+**Banned from being Tera Captains:**
+- Alcremie
+- Araquanid
+- Basculegion-Female
+- Basculegion-Male
+- Blaziken
+- Cetitan
+- Chandelure
+- Comfey
+- Delphox
+- Diancie
+- Emboar
+- Fezandipiti
+- Floatzel
+- Frosmoth
+- Hisuian Braviary
+- Hitmonlee
+- Hoopa
+- Iron Thorns
+- Kilowattrel
+- Lucario
+- Meloetta
+- Oricorio
+- Paldean Tauros Aqua
+- Paldean Tauros Blaze
+- Polteageist
+- Porygon2
+- Regieleki
+- Registeel
+- Sinistcha
+- Staraptor
+- Torterra
+- Venomoth
+    """
     
     await ctx.send(response)
 
@@ -410,7 +427,6 @@ async def banned(ctx):
 
 @bot.command(name='ability')
 async def ability_info(ctx, *, ability_name: str):
-    ability_name = correct_spelling(ability_name, 'ability')
     data = get_pokeapi_data(f'ability/{ability_name.lower().replace(" ", "-")}')
     if data:
         name = data['name'].replace('-', ' ').title()
@@ -422,31 +438,6 @@ async def ability_info(ctx, *, ability_name: str):
         await ctx.send(embed=embed)
     else:
         await ctx.send("Ability not found. Please check the spelling and try again.")
-
-@bot.command(name='move')
-async def move_info(ctx, *, move_name: str):
-    move_name = correct_spelling(move_name, 'move')
-    data = get_pokeapi_data(f'move/{move_name.lower().replace(" ", "-")}')
-    if data:
-        name = data['name'].replace('-', ' ').title()
-        power = data['power'] if data['power'] else "N/A"
-        pp = data['pp']
-        accuracy = data['accuracy'] if data['accuracy'] else "N/A"
-        move_type = data['type']['name'].title()
-        effect_entries = data['effect_entries']
-        effect = next((entry['effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
-        short_effect = next((entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
-
-        embed = discord.Embed(title=f"Move: {name}", color=discord.Color.orange())
-        embed.add_field(name="Type", value=move_type, inline=True)
-        embed.add_field(name="Power", value=power, inline=True)
-        embed.add_field(name="PP", value=pp, inline=True)
-        embed.add_field(name="Accuracy", value=accuracy, inline=True)
-        embed.add_field(name="Effect", value=effect, inline=False)
-        embed.add_field(name="Short Effect", value=short_effect, inline=False)
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("Move not found. Please check the spelling and try again.")
 
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
