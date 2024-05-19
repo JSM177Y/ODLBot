@@ -423,6 +423,31 @@ async def ability_info(ctx, *, ability_name: str):
     else:
         await ctx.send("Ability not found. Please check the spelling and try again.")
 
+@bot.command(name='move')
+async def move_info(ctx, *, move_name: str):
+    move_name = correct_spelling(move_name, 'move')
+    data = get_pokeapi_data(f'move/{move_name.lower().replace(" ", "-")}')
+    if data:
+        name = data['name'].replace('-', ' ').title()
+        power = data['power'] if data['power'] else "N/A"
+        pp = data['pp']
+        accuracy = data['accuracy'] if data['accuracy'] else "N/A"
+        move_type = data['type']['name'].title()
+        effect_entries = data['effect_entries']
+        effect = next((entry['effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+        short_effect = next((entry['short_effect'] for entry in effect_entries if entry['language']['name'] == 'en'), "No description available.")
+
+        embed = discord.Embed(title=f"Move: {name}", color=discord.Color.orange())
+        embed.add_field(name="Type", value=move_type, inline=True)
+        embed.add_field(name="Power", value=power, inline=True)
+        embed.add_field(name="PP", value=pp, inline=True)
+        embed.add_field(name="Accuracy", value=accuracy, inline=True)
+        embed.add_field(name="Effect", value=effect, inline=False)
+        embed.add_field(name="Short Effect", value=short_effect, inline=False)
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("Move not found. Please check the spelling and try again.")
+
 @bot.command(name='avatar')
 async def avatar(ctx, *, member: discord.Member = None):
     member = member or ctx.author  # if no member is specified, use the message author
