@@ -343,14 +343,15 @@ async def week(ctx, week_number: int):
 
 @bot.command(name='tera')
 async def tera(ctx):
-    # Fetch the data from the "Rules" sheet, range D11:D16
+    # Fetch the data from the "Rules" sheet, ranges C11:C16 and D11:D16
     rules_sheet = client.open("Oshawott Draft League").worksheet('Rules')
-    tera_rules = rules_sheet.get('C11:D16')
+    tera_numbers = rules_sheet.get('C11:C16')
+    tera_rules = rules_sheet.get('D11:D16')
 
     # Prepare the response message
     response = "**Terastalisation Rules**\n"
-    for rule in tera_rules:
-        response += f"{rule[0]}\n"
+    for number, rule in zip(tera_numbers, tera_rules):
+        response += f"{number[0]} {rule[0]}\n"
     
     await ctx.send(response)
 
