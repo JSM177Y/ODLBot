@@ -5,7 +5,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
 import requests
-from bs4 import BeautifulSoup
 from functools import lru_cache
 from thefuzz import fuzz, process  # Fuzzy string matching
 
@@ -14,7 +13,7 @@ load_dotenv()
 
 # Variables
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-GOOGLE_CREDENTIALS_FILE = '/home/jsm177y/ODLBot/odlbot-421819-5192c6bbcd6c.json'
+GOOGLE_CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE')
 
 # Set up Discord intents
 intents = discord.Intents.default()
@@ -65,6 +64,24 @@ def get_pokeapi_data(endpoint: str):
         return response.json()
     return None
 
+# Function to fetch special forms from PokéAPI
+def fetch_special_forms():
+    species_data = get_pokeapi_data('pokemon-species?limit=1000')['results']
+    special_forms = []
+
+    def fetch_forms(species):
+        species_detail = get_pokeapi_data(species['url'].split('v2/')[1])
+        forms = species_detail.get('varieties', [])
+        for form in forms:
+            if not form['is_default']:  # Check if it is a special form
+                form_name = form['pokemon']['name']
+                special_forms.append(form_name)
+
+    for species in species_data:
+        fetch_forms(species)
+
+    return special_forms
+
 # Function to correct spelling using fuzzy matching
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
@@ -79,33 +96,19 @@ def correct_spelling(name, category):
     else:
         return name
 
-    match, score = process.extractOne(name, choices)
-    return match if score > 70 else name
+    match, score = process.extractOne(name, choices, scorer=fuzz.ratio)
+    return match if score > 70 else name  # Adjust threshold to 70
 
 # Initialize fuzzy matching data
 pokemon_names = []
-special_forms = [
-    'rattata-alola', 'raticate-alola', 'raichu-alola', 'sandshrew-alola', 'sandslash-alola', 
-    'vulpix-alola', 'ninetales-alola', 'diglett-alola', 'dugtrio-alola', 'meowth-alola', 
-    'persian-alola', 'geodude-alola', 'graveler-alola', 'golem-alola', 'grimer-alola', 
-    'muk-alola', 'exeggutor-alola', 'marowak-alola', 
-    'meowth-galar', 'ponyta-galar', 'rapidash-galar', 'slowpoke-galar', 'slowbro-galar', 
-    'farfetchd-galar', 'weezing-galar', 'mr-mime-galar', 'articuno-galar', 'zapdos-galar', 
-    'moltres-galar', 'slowking-galar', 'corsola-galar', 'zigzagoon-galar', 'linoone-galar', 
-    'darumaka-galar', 'darmanitan-galar', 'yamask-galar', 'stunfisk-galar', 
-    'growlithe-hisui', 'arcanine-hisui', 'voltorb-hisui', 'electrode-hisui', 'typhlosion-hisui', 
-    'qwilfish-hisui', 'sneasel-hisui', 'samurott-hisui', 'lilligant-hisui', 'zorua-hisui', 
-    'zoroark-hisui', 'braviary-hisui', 'sliggoo-hisui', 'goodra-hisui', 'avalugg-hisui', 
-    'decidueye-hisui', 
-    'wooper-paldea', 'tauros-paldea-combat', 'tauros-paldea-blaze', 'tauros-paldea-aqua'
-]
+special_forms = []
 move_names = []
 ability_names = []
 type_names = []
 
 @bot.event
 async def on_ready():
-    global pokemon_names, move_names, ability_names, type_names
+    global pokemon_names, special_forms, move_names, ability_names, type_names
 
     # Load data for fuzzy matching
     pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
@@ -116,6 +119,9 @@ async def on_ready():
     ability_names = [a['name'] for a in ability_data]
     type_data = get_pokeapi_data('type')['results']
     type_names = [t['name'] for t in type_data]
+
+    # Fetch special forms
+    special_forms = fetch_special_forms()
 
     print(f'{bot.user.name} has connected to Discord!')
 
@@ -366,7 +372,7 @@ async def tera(ctx):
     # Prepare the response message
     response = "**Terastalisation Rules**\n"
     for number, rule in zip(tera_numbers, tera_rules):
-        response += f"{number[0]}: {rule[0]}\n"
+        response += f"{number[0]} {rule[0]}\n"
     
     await ctx.send(response)
 
