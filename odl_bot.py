@@ -115,10 +115,7 @@ async def on_ready():
     ability_names = [a['name'] for a in ability_data]
     type_data = get_pokeapi_data('type')['results']
     type_names = [t['name'] for t in type_data]
-
-    # Fetch special forms
-    special_forms = fetch_special_forms()
-
+    
     print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command(name='type')
