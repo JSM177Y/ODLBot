@@ -289,11 +289,11 @@ for row in matchup_data[1:]:  # Skip the header row
         team2 = int(row[17])  # Column R
 
         if week not in week_matchups:
-            week_matchups[week] = []
-        week_matchups[week].append((team1, team2))
+            week_matchups[week] = set()  # Use a set to prevent duplicates
+        week_matchups[week].add((team1, team2))
     except (ValueError, IndexError):
         continue
-    
+
 @bot.command(name='week')
 async def week(ctx, week_number: int):
     if week_number in week_matchups:
