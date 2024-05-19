@@ -84,10 +84,10 @@ def correct_spelling(name, category):
 
 # Initialize fuzzy matching data
 pokemon_names = []
+special_forms = ['samurott-hisui', 'zoroark-hisui', 'growlithe-hisui', 'voltorb-hisui', 'braviary-hisui', 'sneasel-hisui', 'avalugg-hisui', 'typhlosion-hisui', 'decidueye-hisui']
 move_names = []
 ability_names = []
 type_names = []
-special_forms = ['hisuian samurott', 'galarian zapdos', 'alolan raichu']  # Add special forms here
 
 @bot.event
 async def on_ready():
