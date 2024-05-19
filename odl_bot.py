@@ -351,7 +351,7 @@ async def tera(ctx):
     # Prepare the response message
     response = "**Terastalisation Rules**\n"
     for number, rule in zip(tera_numbers, tera_rules):
-        response += f"{number[0]} {rule[0]}\n"
+        response += f"{number[0]}: {rule[0]}\n"
     
     await ctx.send(response)
 
