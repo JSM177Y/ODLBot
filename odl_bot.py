@@ -87,6 +87,7 @@ pokemon_names = []
 move_names = []
 ability_names = []
 type_names = []
+special_forms = ['hisuian samurott', 'galarian zapdos', 'alolan raichu']  # Add special forms here
 
 @bot.event
 async def on_ready():
