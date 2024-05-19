@@ -54,34 +54,6 @@ for row in matchup_data[1:]:  # Skip the header row
     except (ValueError, IndexError):
         continue
 
-# Caching functions
-@lru_cache(maxsize=128)
-def get_pokeapi_data(endpoint: str):
-    """Cached function to get data from the PokéAPI."""
-    url = f"https://pokeapi.co/api/v2/{endpoint}/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
-
-# Function to fetch special forms from PokéAPI
-def fetch_special_forms():
-    species_data = get_pokeapi_data('pokemon-species?limit=1000')['results']
-    special_forms = []
-
-    def fetch_forms(species):
-        species_detail = get_pokeapi_data(species['url'].split('v2/')[1])
-        forms = species_detail.get('varieties', [])
-        for form in forms:
-            if not form['is_default']:  # Check if it is a special form
-                form_name = form['pokemon']['name']
-                special_forms.append(form_name)
-
-    for species in species_data:
-        fetch_forms(species)
-
-    return special_forms
-
 # Function to correct spelling using fuzzy matching
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
@@ -101,7 +73,21 @@ def correct_spelling(name, category):
 
 # Initialize fuzzy matching data
 pokemon_names = []
-special_forms = []
+special_forms = [
+    'rattata-alola', 'raticate-alola', 'raichu-alola', 'sandshrew-alola', 'sandslash-alola', 
+    'vulpix-alola', 'ninetales-alola', 'diglett-alola', 'dugtrio-alola', 'meowth-alola', 
+    'persian-alola', 'geodude-alola', 'graveler-alola', 'golem-alola', 'grimer-alola', 
+    'muk-alola', 'exeggutor-alola', 'marowak-alola', 
+    'meowth-galar', 'ponyta-galar', 'rapidash-galar', 'slowpoke-galar', 'slowbro-galar', 
+    'farfetchd-galar', 'weezing-galar', 'mr-mime-galar', 'articuno-galar', 'zapdos-galar', 
+    'moltres-galar', 'slowking-galar', 'corsola-galar', 'zigzagoon-galar', 'linoone-galar', 
+    'darumaka-galar', 'darmanitan-galar', 'yamask-galar', 'stunfisk-galar', 
+    'growlithe-hisui', 'arcanine-hisui', 'voltorb-hisui', 'electrode-hisui', 'typhlosion-hisui', 
+    'qwilfish-hisui', 'sneasel-hisui', 'samurott-hisui', 'lilligant-hisui', 'zorua-hisui', 
+    'zoroark-hisui', 'braviary-hisui', 'sliggoo-hisui', 'goodra-hisui', 'avalugg-hisui', 
+    'decidueye-hisui', 
+    'wooper-paldea', 'tauros-paldea-combat', 'tauros-paldea-blaze', 'tauros-paldea-aqua'
+]
 move_names = []
 ability_names = []
 type_names = []
