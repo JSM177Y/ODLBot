@@ -54,6 +54,16 @@ for row in matchup_data[1:]:  # Skip the header row
     except (ValueError, IndexError):
         continue
 
+# Caching functions
+@lru_cache(maxsize=128)
+def get_pokeapi_data(endpoint: str):
+    """Cached function to get data from the PokéAPI."""
+    url = f"https://pokeapi.co/api/v2/{endpoint}/"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
 # Function to correct spelling using fuzzy matching
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
