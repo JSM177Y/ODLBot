@@ -277,51 +277,23 @@ team_names = data_sheet.get('D2:D9')
 # Convert the fetched data to a dictionary
 teams = {index + 1: team[0] for index, team in enumerate(team_names)}
 
-# Define the matchups for each week
-week_matchups = {
-    1: [
-        (1,5),
-        (2,6),
-        (3,7),
-        (4,8)
-    ],
-    2: [
-        (1,3),
-        (2,4),
-        (5,7),
-        (6,8)
-    ],
-    3: [
-        (1,4),
-        (2,3),
-        (5,8),
-        (6,7)
-    ],
-    4: [
-        (1,2),
-        (3,4),
-        (5,6),
-        (7,8)
-    ],
-    5: [
-        (1,6),
-        (2,5),
-        (3,8),
-        (4,7)
-    ],
-    6: [
-        (1,7),
-        (2,8),
-        (3,5),
-        (4,6)
-    ],
-    7: [
-        (1,8),
-        (2,7),
-        (3,6),
-        (4,5)
-    ]
-}
+# Fetch matchup data
+matchup_data = data_sheet.get_all_values()
+week_matchups = {}
+
+# Process the matchup data
+for row in matchup_data[1:]:  # Skip the header row
+    try:
+        week = int(row[7])  # Column H
+        team1 = int(row[9])  # Column J
+        team2 = int(row[17])  # Column R
+
+        if week not in week_matchups:
+            week_matchups[week] = []
+        week_matchups[week].append((team1, team2))
+    except (ValueError, IndexError):
+        continue
+    
 @bot.command(name='week')
 async def week(ctx, week_number: int):
     if week_number in week_matchups:
