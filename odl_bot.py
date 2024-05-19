@@ -54,16 +54,6 @@ for row in matchup_data[1:]:  # Skip the header row
     except (ValueError, IndexError):
         continue
 
-# Load data for fuzzy matching
-pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
-pokemon_names = [p['name'] for p in pokemon_data]
-move_data = get_pokeapi_data('move?limit=1000')['results']
-move_names = [m['name'] for m in move_data]
-ability_data = get_pokeapi_data('ability?limit=1000')['results']
-ability_names = [a['name'] for a in ability_data]
-type_data = get_pokeapi_data('type')['results']
-type_names = [t['name'] for t in type_data]
-
 # Caching functions
 @lru_cache(maxsize=128)
 def get_pokeapi_data(endpoint: str):
@@ -74,6 +64,7 @@ def get_pokeapi_data(endpoint: str):
         return response.json()
     return None
 
+# Function to correct spelling using fuzzy matching
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
     if category == 'pokemon':
@@ -89,6 +80,28 @@ def correct_spelling(name, category):
 
     match, score = process.extractOne(name, choices)
     return match if score > 80 else name
+
+# Initialize fuzzy matching data
+pokemon_names = []
+move_names = []
+ability_names = []
+type_names = []
+
+@bot.event
+async def on_ready():
+    global pokemon_names, move_names, ability_names, type_names
+
+    # Load data for fuzzy matching
+    pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
+    pokemon_names = [p['name'] for p in pokemon_data]
+    move_data = get_pokeapi_data('move?limit=1000')['results']
+    move_names = [m['name'] for m in move_data]
+    ability_data = get_pokeapi_data('ability?limit=1000')['results']
+    ability_names = [a['name'] for a in ability_data]
+    type_data = get_pokeapi_data('type')['results']
+    type_names = [t['name'] for t in type_data]
+
+    print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command(name='type')
 async def type_info(ctx, *, types: str):
@@ -232,10 +245,6 @@ def process_evolution_chain(data):
             break
         current = current['evolves_to'][0]
     return evolution_chain
-
-@bot.event
-async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command(name='standings')
 async def standings(ctx):
