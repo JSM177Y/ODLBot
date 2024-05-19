@@ -343,49 +343,14 @@ async def week(ctx, week_number: int):
 
 @bot.command(name='tera')
 async def tera(ctx):
-    # Prepare the message
-    response = """
-**Terastalisation Rules**
-1. Teams will have 15 points to spend on Tera Captains.
-2. Captaining a Pokemon costs the same as the price you drafted it for.
-3. A Tera Captain will have access to 3 Tera Crystals. One has to be of the same type as the user (1 of 2 STAB's if it is dual type), and then any 2 types, this includes Stellar.
-4. Teams can assign 2 or 3 Tera Captains and must stay within the 15 point budget.
-5. You can only Tera captain Pokemon 9 points and under, with some exceptions...
+    # Fetch the data from the "Rules" sheet, range D11:D16
+    rules_sheet = client.open("Oshawott Draft League").worksheet('Rules')
+    tera_rules = rules_sheet.get('D11:D16')
 
-**Banned from being Tera Captains:**
-- Alcremie
-- Araquanid
-- Basculegion-Female
-- Basculegion-Male
-- Blaziken
-- Cetitan
-- Chandelure
-- Comfey
-- Delphox
-- Diancie
-- Emboar
-- Fezandipiti
-- Floatzel
-- Frosmoth
-- Hisuian Braviary
-- Hitmonlee
-- Hoopa
-- Iron Thorns
-- Kilowattrel
-- Lucario
-- Meloetta
-- Oricorio
-- Paldean Tauros Aqua
-- Paldean Tauros Blaze
-- Polteageist
-- Porygon2
-- Regieleki
-- Registeel
-- Sinistcha
-- Staraptor
-- Torterra
-- Venomoth
-    """
+    # Prepare the response message
+    response = "**Terastalisation Rules**\n"
+    for rule in tera_rules:
+        response += f"{rule[0]}\n"
     
     await ctx.send(response)
 
