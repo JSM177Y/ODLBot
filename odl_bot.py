@@ -13,7 +13,7 @@ load_dotenv()
 
 # Variables
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-GOOGLE_CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE')
+GOOGLE_CREDENTIALS_FILE = '/home/jsm177y/ODLBot/odlbot-421819-5192c6bbcd6c.json'
 
 # Set up Discord intents
 intents = discord.Intents.default()
