@@ -270,17 +270,13 @@ async def team(ctx, *, query: str):
     else:
         await ctx.send("No team or coach found with that name.")
 
-# Define team identifiers
-teams = {
-    1: "Scalchop Samurai",
-    2: "Eevee Elite",
-    3: "Gooning Gamblers",
-    4: "Medali Mausholds",
-    5: "Wixom Wakes",
-    6: "Striking Talons",
-    7: "Shell Shocks",
-    8: "Fregigigas"
-}
+# Fetch team names from the "Data" sheet
+data_sheet = client.open("Oshawott Draft League").worksheet('Data')
+team_names = data_sheet.get('D2:D9')
+
+# Convert the fetched data to a dictionary
+teams = {index + 1: team[0] for index, team in enumerate(team_names)}
+
 # Define the matchups for each week
 week_matchups = {
     1: [
