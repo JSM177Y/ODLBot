@@ -69,7 +69,7 @@ def get_pokeapi_data(endpoint: str):
 def correct_spelling(name, category):
     """Function to correct spelling using fuzzy matching."""
     if category == 'pokemon':
-        choices = pokemon_names
+        choices = pokemon_names + special_forms
     elif category == 'move':
         choices = move_names
     elif category == 'ability':
