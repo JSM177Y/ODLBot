@@ -298,8 +298,13 @@ for row in matchup_data[1:]:  # Skip the header row
 async def week(ctx, week_number: int):
     if week_number in week_matchups:
         matchups = week_matchups[week_number]
-        # Convert team identifiers to names
-        formatted_matchups = [f"{teams[match[0]]} vs {teams[match[1]]}" for match in matchups]
+        # Convert team identifiers to names and avoid duplicates
+        seen_matchups = set()
+        formatted_matchups = []
+        for match in matchups:
+            if match not in seen_matchups and (match[1], match[0]) not in seen_matchups:
+                seen_matchups.add(match)
+                formatted_matchups.append(f"{teams[match[0]]} vs {teams[match[1]]}")
         response = f"**Matchups for Week {week_number}:**\n" + "\n".join(formatted_matchups)
     else:
         response = "Invalid week number. Please enter a number between 1 and 7."
