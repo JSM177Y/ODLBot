@@ -80,7 +80,7 @@ def correct_spelling(name, category):
         return name
 
     match, score = process.extractOne(name, choices)
-    return match if score > 80 else name
+    return match if score > 70 else name
 
 # Initialize fuzzy matching data
 pokemon_names = []
