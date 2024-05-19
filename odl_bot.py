@@ -84,10 +84,27 @@ def correct_spelling(name, category):
 
 # Initialize fuzzy matching data
 pokemon_names = []
-special_forms = ['samurott-hisui', 'zoroark-hisui', 'growlithe-hisui', 'voltorb-hisui', 'braviary-hisui', 'sneasel-hisui', 'avalugg-hisui', 'typhlosion-hisui', 'decidueye-hisui']
 move_names = []
 ability_names = []
 type_names = []
+
+species_data = get_pokeapi_data('pokemon-species?limit=1000')['results']
+
+# List to hold all special forms
+special_forms = []
+
+# Function to fetch forms for a given species
+def fetch_forms(species):
+    species_detail = get_pokeapi_data(species['url'].split('v2/')[1])
+    forms = species_detail.get('varieties', [])
+    for form in forms:
+        if not form['is_default']:  # Check if it is a special form
+            form_name = form['pokemon']['name']
+            special_forms.append(form_name)
+
+# Iterate over all species to fetch their forms
+for species in species_data:
+    fetch_forms(species)
 
 @bot.event
 async def on_ready():
