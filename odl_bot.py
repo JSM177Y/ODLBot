@@ -104,7 +104,7 @@ type_names = []
 
 @bot.event
 async def on_ready():
-    global pokemon_names, move_names, ability_names, type_names
+    global pokemon_names, special_forms, move_names, ability_names, type_names
 
     # Load data for fuzzy matching
     pokemon_data = get_pokeapi_data('pokemon?limit=1000')['results']
@@ -115,7 +115,7 @@ async def on_ready():
     ability_names = [a['name'] for a in ability_data]
     type_data = get_pokeapi_data('type')['results']
     type_names = [t['name'] for t in type_data]
-
+    
     print(f'{bot.user.name} has connected to Discord!')
 
 @bot.command(name='type')
@@ -188,7 +188,7 @@ async def pokemon_info(ctx, *, name: str):
         species_data = get_pokeapi_data(species_url.replace("https://pokeapi.co/api/v2/", ""))
         evolution_chain_url = species_data['evolution_chain']['url']
         evolution_data = get_pokeapi_data(evolution_chain_url.replace("https://pokeapi.co/api/v2/", ""))
-        evolution_details = process_evolution_chain(evolution_data, name.lower())
+        evolution_details = process_evolution_chain(evolution_data)
 
         description = f"**{data['name'].title()}**\n"
         description += f"**Types**: {', '.join(types)}\n"
@@ -204,68 +204,57 @@ async def pokemon_info(ctx, *, name: str):
     else:
         await ctx.send("Pokémon not found. Please check the spelling and try again.")
 
-def process_evolution_chain(data, form_name):
-    """Processes the evolution chain data to format it as a readable string, handling special forms."""
+def process_evolution_chain(data):
+    """Processes the evolution chain data to format it as a readable string."""
     evolution_chain = ""
     current = data['chain']
     while current:
         species_name = current['species']['name'].title()  # Capitalize the Pokémon name
-        if species_name.lower() == form_name:
-            form_specific = True
-        else:
-            form_specific = False
-        
         if current['evolves_to']:
-            for evolution in current['evolves_to']:
-                evolution_name = evolution['species']['name'].title()
-                details_list = evolution['evolution_details']
-                conditions = []
-                for details in details_list:
-                    trigger = details['trigger']['name']
+            details_list = current['evolves_to'][0]['evolution_details']
+            conditions = []
+            for details in details_list:
+                trigger = details['trigger']['name']
 
-                    if trigger == 'level-up':
-                        level = details.get('min_level')
-                        condition = f"Level {level}" if level else "Level up"
-                        if details.get('time_of_day'):
-                            condition += f" during {details['time_of_day']} time"
-                        if details.get('held_item'):
-                            item = details['held_item']['name']
-                            condition += f" while holding {item}"
-                        if details.get('location'):
-                            location = details['location']['name']
-                            condition += f" at {location}"
-                        if details.get('gender'):
-                            condition += f" if gender is {details['gender']}"
-                        if details.get('min_happiness'):
-                            condition += f" with high friendship ({details['min_happiness']})"
-                        conditions.append(condition)
+                if trigger == 'level-up':
+                    level = details.get('min_level')
+                    condition = f"Level {level}" if level else "Level up"
+                    if details.get('time_of_day'):
+                        condition += f" during {details['time_of_day']} time"
+                    if details.get('held_item'):
+                        item = details['held_item']['name']
+                        condition += f" while holding {item}"
+                    if details.get('location'):
+                        location = details['location']['name']
+                        condition += f" at {location}"
+                    if details.get('gender'):
+                        condition += f" if gender is {details['gender']}"
+                    if details.get('min_happiness'):
+                        condition += f" with high friendship ({details['min_happiness']})"
+                    conditions.append(condition)
 
-                    elif trigger == 'use-item':
-                        item = details['item']['name']
-                        conditions.append(f"Use {item}")
+                elif trigger == 'use-item':
+                    item = details['item']['name']
+                    conditions.append(f"Use {item}")
 
-                    elif trigger == 'trade':
-                        if details.get('held_item'):
-                            item = details['held_item']['name']
-                            conditions.append(f"Trade while holding {item}")
-                        else:
-                            conditions.append("Trade")
+                elif trigger == 'trade':
+                    if details.get('held_item'):
+                        item = details['held_item']['name']
+                        conditions.append(f"Trade while holding {item}")
+                    else:
+                        conditions.append("Trade")
 
-                    elif trigger == 'other':
-                        conditions.append("Special condition")  # Can be detailed further as needed
+                elif trigger == 'other':
+                    conditions.append("Special condition")  # Can be detailed further as needed
 
-                    elif trigger == 'friendship':
-                        condition = "With high friendship"
-                        if details.get('time_of_day'):
-                            condition += f" during {details['time_of_day']} time"
-                        conditions.append(condition)
+                elif trigger == 'friendship':
+                    condition = "With high friendship"
+                    if details.get('time_of_day'):
+                        condition += f" during {details['time_of_day']} time"
+                    conditions.append(condition)
 
-                evolution_details = " or ".join(conditions)
-                evolution_chain += f"{species_name} -> ({evolution_details}) {evolution_name} "
-                
-                if form_specific:
-                    break  # Only process the specific form's evolution
-
+            evolution_details = " or ".join(conditions)
+            evolution_chain += f"{species_name} -> ({evolution_details}) "
         else:
             evolution_chain += species_name
             break
