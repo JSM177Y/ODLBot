@@ -41,7 +41,7 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     check_new_video.start()  # Start the loop to check for new videos
 
-@tasks.loop(minutes=10)
+@tasks.loop(minutes = 30)
 async def check_new_video():
     try:
         print("Checking for new videos...")
