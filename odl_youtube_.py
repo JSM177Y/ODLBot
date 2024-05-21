@@ -12,6 +12,7 @@ DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 DISCORD_CHANNEL_ID = 1210301630814224465  # Your Discord channel ID
 YOUTUBE_CHANNEL_ID = 'UCNU_fAA0EwROJf0IQgXAarA'  # Your YouTube channel ID
+POSTED_VIDEOS_FILE = 'posted_videos.txt'
 
 # YouTube API setup
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
@@ -25,17 +26,23 @@ intents.guilds = True
 # Discord Bot setup
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Keep track of the last uploaded video ID
-last_video_id = None
+def read_posted_videos():
+    if os.path.exists(POSTED_VIDEOS_FILE):
+        with open(POSTED_VIDEOS_FILE, 'r') as file:
+            return file.read().splitlines()
+    return []
+
+def write_posted_video(video_id):
+    with open(POSTED_VIDEOS_FILE, 'a') as file:
+        file.write(video_id + '\n')
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     check_new_video.start()  # Start the loop to check for new videos
 
-@tasks.loop(minutes = 10)  # Increased interval to 1 hour
+@tasks.loop(minutes=10)
 async def check_new_video():
-    global last_video_id
     try:
         print("Checking for new videos...")
         request = youtube.search().list(
@@ -43,15 +50,17 @@ async def check_new_video():
             channelId=YOUTUBE_CHANNEL_ID,
             order='date',
             type='video',
-            maxResults=1  # Reduced to 1 to minimize data usage
+            maxResults=1
         )
         response = request.execute()
 
         if response['items']:
             latest_video = response['items'][0]
             video_id = latest_video['id']['videoId']
-            if video_id and video_id != last_video_id:
-                last_video_id = video_id
+            posted_videos = read_posted_videos()
+
+            if video_id and video_id not in posted_videos:
+                write_posted_video(video_id)
                 video_title = latest_video['snippet']['title']
                 video_url = f'https://www.youtube.com/watch?v={video_id}'
                 channel = bot.get_channel(DISCORD_CHANNEL_ID)
