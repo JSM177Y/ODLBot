@@ -283,17 +283,17 @@ async def mvp(ctx):
     data_rows = all_values[3:]  # Assumes the first three rows are headers or empty
     response = "**MVP Race - Top 15:**\n"
 
-    # Debugging: Check the structure of the first data row
-    print(data_rows[0])  # Remove or comment this line after debugging
-
     try:
-        # Sorting rows by the 'Diff.' column
-        sorted_rows = sorted(data_rows, key=lambda x: int(x[2].strip() or 0), reverse=True)
+        # Sorting rows by the 'Rank' column (assuming it's the third column, index 2)
+        sorted_rows = sorted(data_rows, key=lambda x: int(x[2].strip('#') or 0))
     except IndexError as e:
         await ctx.send("Error processing data: " + str(e))
         return
+    except ValueError as e:
+        await ctx.send("Error processing rank data: " + str(e))
+        return
 
-    for row in sorted_rows[:16]:  # Only include the top 20
+    for row in sorted_rows[:16]:  # Only include the top 15
         if all(cell.strip() == '' for cell in row):
             continue
         rank = row[2].strip('#')
