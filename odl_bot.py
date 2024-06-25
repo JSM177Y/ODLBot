@@ -288,7 +288,7 @@ async def mvp(ctx):
 
     try:
         # Sorting rows by the 'Diff.' column
-        sorted_rows = sorted(data_rows, key=lambda x: int(x[9].strip() or 0), reverse=True)
+        sorted_rows = sorted(data_rows, key=lambda x: int(x[2].strip() or 0), reverse=True)
     except IndexError as e:
         await ctx.send("Error processing data: " + str(e))
         return
