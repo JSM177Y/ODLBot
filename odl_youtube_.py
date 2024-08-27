@@ -10,9 +10,13 @@ load_dotenv()
 # Variables
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
-DISCORD_CHANNEL_ID = 1210301630814224465  # Your Discord channel ID
+VIDEOS_CHANNEL_ID = 1210301630814224465  # Replace with your Discord videos channel ID
+CLIPS_AND_HIGHLIGHTS_CHANNEL_ID = 1210293328655028317  # Replace with your Discord clips and highlights channel ID
 POSTED_VIDEOS_FILE = 'posted_videos.txt'
 CHANNEL_URLS_FILE = 'channel_urls.txt'
+
+# Special channel handle
+SPECIAL_CHANNEL_HANDLE = 'OshawottDraftLeague'
 
 # YouTube API setup
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
@@ -95,13 +99,22 @@ async def check_new_video():
                             write_posted_video(video_id)
                             video_title = latest_video['snippet']['title']
                             video_url = f'https://www.youtube.com/watch?v={video_id}'
-                            channel = bot.get_channel(DISCORD_CHANNEL_ID)
+
+                            message = f'🎥 **New Video Uploaded:**\n{video_title}\n{video_url}'
+
+                            if channel_handle == SPECIAL_CHANNEL_HANDLE:
+                                # Post in the videos channel
+                                channel = bot.get_channel(VIDEOS_CHANNEL_ID)
+                            else:
+                                # Post in the clips and highlights channel
+                                channel = bot.get_channel(CLIPS_AND_HIGHLIGHTS_CHANNEL_ID)
+                            
                             if channel:
                                 if not channel.permissions_for(channel.guild.me).send_messages:
                                     print(f"Do not have permission to send messages in {channel.name}")
                                     return
-                                await channel.send(f'🎥 **New Video Uploaded by {channel_handle}:** {video_title}\n{video_url}')
-                                print(f"Posted new video: {video_title}")
+                                await channel.send(message)
+                                print(f"Posted new video: {video_title} in {channel.name}")
                             else:
                                 print("Channel not found.")
                         else:
